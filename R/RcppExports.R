@@ -18,7 +18,7 @@ windowMean <- function(indat, radius) {
     .Call('_harpSpatial_windowMean', PACKAGE = 'harpSpatial', indat, radius)
 }
 
-score_fss <- function(fc, ob, thresholds, window_sizes) {
-    .Call('_harpSpatial_score_fss', PACKAGE = 'harpSpatial', fc, ob, thresholds, window_sizes)
+score_fss <- function(obfield, fcfield, thresholds, window_sizes) {
+    .Call('_harpSpatial_score_fss', PACKAGE = 'harpSpatial', obfield, fcfield, thresholds, window_sizes)
 }
 

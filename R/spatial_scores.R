@@ -24,7 +24,7 @@ spatial_scores <- function(score = NULL, obfield = NULL, fcfield = NULL, ...) {
   }
 
   # FIXME: we may be calling with options that are not recognised/used by the score
-  do.call(score_list[[score]]$func, obfield = obfield, fcfield = fcfield, ...)
+  do.call(score_list[[score]]$func, list(obfield = obfield, fcfield = fcfield, ...))
 }
 
 
@@ -38,7 +38,7 @@ spatial_scores <- function(score = NULL, obfield = NULL, fcfield = NULL, ...) {
 #' @param window_sizes A vector of (odd!) window sizes
 #' @return A tibble with columns for threshold, window_size and various scores.
 #' @export
-verify_fuzzy <- function(obfield, fcfield, thresholds, window_sizes) {
+verify_fuzzy <- function(obfield, fcfield, thresholds, window_sizes, ...) {
   # you  might as well calculate a fixed set: they're 'cheap'
   if (is.character(scores)) scores <- list(scores)
   if (any(window_sizes %% 2 != 1)) stop("Window sizes must be odd.")
@@ -60,16 +60,17 @@ verify_fuzzy <- function(obfield, fcfield, thresholds, window_sizes) {
 #  )
   # Some other scores are probably best added in the same call, so we only calculate fractions once
   # but it may not matter so much...
-  list("fss" = score_fss(obfield, fcfield, thresholds, window_sizes))
+  list("fss" = score_fss(obfield=obfield, fcfield=fcfield, thresholds=thresholds, window_sizes))
 }
 
 #' Run spatial verification for 1 case
 #'
 #' @param obfield Observation grid.
 #' @param fcfield Forecast field
+#' @param ... ignored
 #' return A 1-row tibble of scores
 #' @export
-score_sp_aggregated <- function(obfield, fcfield) {
+score_sp_aggregated <- function(obfield, fcfield, ...) {
   ## basic spatial scores that do not require a threshold, scale etc.
   ## so for a given case (date, time, leadtime), every score is a single number.
   ## we store MSE, not RMSE, because eventually we may want to sum over a period, too.

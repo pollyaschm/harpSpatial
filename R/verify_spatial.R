@@ -53,7 +53,7 @@
 #' @param verif_domain A \code{geodomain} that defines the common verification grid.
 #' @param return_data          = TRUE,
 #' @param thresholds Thresholds used for FSS, ...
-#' @param box_sizes Scales used for fuzzy methods like FSS. A vector of box sizes.
+#' @param window_sizes Scales used for fuzzy methods like FSS. A vector of box sizes.
 #'   All values must be odd integers (so the central point is really in the center of a box).
 #' @param sqlite_path If specified, SQLite files are generated and written to
 #'   this directory.
@@ -85,7 +85,7 @@ verify_spatial <- function(start_date,
                            ob_accumulation      = "15m",
                            verif_domain         = NULL,
                            use_mask             = FALSE,
-                           box_sizes            = c(1, 3, 5, 11, 21),
+                           window_sizes            = c(1, 3, 5, 11, 21),
                            thresholds           = c(0.1, 1, 5, 10),
                            sqlite_path          = NULL,
                            sqlite_file          = "harp_spatial_scores.sqlite",
@@ -302,12 +302,15 @@ verify_spatial <- function(start_date,
         # NOTE: in this loop approach, we should add all possible parameters in every call
         #       even if a particular score will not use them...
         # FIXME: Some scores (e.g. SAL) have various other parameters that we can't pass yet...
-        sc <- spatial_scores(score = score_list[i],
+        message("-----> Calling score ", score_list[sn])
+        sc <- spatial_scores(score = score_list[sn],
                              obfield = obfield,
                              fcfield = fcfield,
                              thresholds = thresholds,
-                             box_sizes = box_sizes
+                             window_sizes = window_sizes
                              )
+        nrow <- dim(sc)[1]
+#        message("            dim=", dim(sc)[1])
         # we use the first case to build the full score table
         if (is.null(scores[[sn]])) {
           template <- spatial_score_table(spatial_scores(score_list[sn])$fields)
@@ -317,18 +320,19 @@ verify_spatial <- function(start_date,
                                            "INTEGER"   = NA_integer_, 
                                            "REAL"      = NA_real_,
                                            NA_real_))
-          scores[[sc]] <- do.call(tibble::tibble, c(tbl_struct, .rows = ncases * dim(sc)[1]))
+#          print(tbl_struct)
+          scores[[sn]] <- do.call(tibble::tibble, c(tbl_struct, .rows = ncases * nrow))
           # we can already fill some constant columns
-          if ("model" %in% names(scores[[sc]])) scores[[sc]]$model <- det_model
-          if ("prm" %in% names(scores[[sc]]))   scores[[sc]]$prm   <- parameter
+          if ("model" %in% names(scores[[sn]])) scores[[sn]]$model <- det_model
+          if ("prm" %in% names(scores[[sn]]))   scores[[sn]]$prm   <- parameter
         }
         # which interval of the score table is to be filled (may be only 1 row -> score[case, ...])
-        intv <- seq_len(dim(sc)[1]) + (case - 1) * dim(sc)[1]
+        intv <- seq_len(nrow) + (case - 1) * nrow
         # NOTE: save fcdate as unix date, leadtime in seconds !
-        scores[[sc]]$fcdate[intv] <- as.numeric(fcdate)
-        scores[[sc]]$leadtime[intv] <- ldt
-        scores[[sc]][intv, names(sc)] <- sc
-        scores[[sc]]$fcdate[intv] <- as.numeric(fcdate)
+        scores[[sn]]$fcdate[intv] <- as.numeric(fcdate)
+        scores[[sn]]$leadtime[intv] <- ldt
+        scores[[sn]][intv, names(sc)] <- sc
+        scores[[sn]]$fcdate[intv] <- as.numeric(fcdate)
       }
       # TODO: ensemble scores
 
@@ -341,7 +345,7 @@ verify_spatial <- function(start_date,
   }
 
   ## write to SQLite
-  if (!is.null(sqlite_path)) {
+  if (!is.null(sqlite_file)) {
     save_spatial_verif(scores, sqlite_path, sqlite_file)
   }
 
@@ -354,7 +358,8 @@ verify_spatial <- function(start_date,
 #' @param sqlite_path The path for the sqlite file
 #' @param sqlite_file The file to which the tables are written or added
 save_spatial_verif <- function(scores, sqlite_path, sqlite_file) {
-  db_file <- paste(sqlite_path, sqlite_file, sep = "/")
+  if (is.null(sqlite_path)) db_file <- sqlite_file
+  else db_file <- paste(sqlite_path, sqlite_file, sep = "/")
   message("Writing to SQLite file ", db_file)
   db <- harpIO:::dbopen(db_file)
   for (sc in names(scores)) {
@@ -364,7 +369,7 @@ save_spatial_verif <- function(scores, sqlite_path, sqlite_file) {
     harpIO:::create_table(db, sc, tab$fields, tab$primary)
     # TODO: should we drop all cases were any field is missing?
     ok <- !is.na(scores[[sc]][, "fcdate"])
-    message(sc, ":", dim(scores[[sc]])[1], length(ok))
+    message(sc, ":", dim(scores[[sc]])[1], " rows, ", length(ok), " non-NA.")
     harpIO:::dbwrite(db, sc, scores[[sc]][ok, ])
   }
 

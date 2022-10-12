@@ -4,7 +4,7 @@
 \alias{verify_fuzzy}
 \title{Run "fuzzy" spatial verification for 1 case}
 \usage{
-verify_fuzzy(obfield, fcfield, thresholds, window_sizes)
+verify_fuzzy(obfield, fcfield, thresholds, window_sizes, ...)
 }
 \arguments{
 \item{obfield}{Observation grid.}

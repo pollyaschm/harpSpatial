@@ -26,7 +26,7 @@ verify_spatial(
   ob_accumulation = "15m",
   verif_domain = NULL,
   use_mask = FALSE,
-  box_sizes = c(1, 3, 5, 11, 21),
+  window_sizes = c(1, 3, 5, 11, 21),
   thresholds = c(0.1, 1, 5, 10),
   sqlite_path = NULL,
   sqlite_file = "harp_spatial_scores.sqlite",
@@ -104,7 +104,7 @@ and a time unit, e.g. "15m" or "1h". "0" means an instantaneous value.}
 
 \item{verif_domain}{A \code{geodomain} that defines the common verification grid.}
 
-\item{box_sizes}{Scales used for fuzzy methods like FSS. A vector of box sizes.
+\item{window_sizes}{Scales used for fuzzy methods like FSS. A vector of box sizes.
 All values must be odd integers (so the central point is really in the center of a box).}
 
 \item{thresholds}{Thresholds used for FSS, ...}

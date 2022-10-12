@@ -55,11 +55,11 @@ NumericMatrix windowMean(NumericMatrix indat, NumericVector radius) {
 
 
 // [[Rcpp::export]]
-DataFrame score_fss(NumericMatrix fc, NumericMatrix ob,
+DataFrame score_fss(NumericMatrix obfield, NumericMatrix fcfield,
                     NumericVector thresholds, NumericVector window_sizes) {
   int i, j, k, x, y;
   int n_thresholds=thresholds.length(), n_sizes=window_sizes.length();
-  int ni=fc.ncol(), nj=fc.nrow();
+  int ni=fcfield.ncol(), nj=fcfield.nrow();
   double fss1, fss2;
   NumericVector res_fss(n_thresholds * n_sizes);
   NumericVector res_thresh(n_thresholds * n_sizes);
@@ -74,8 +74,8 @@ DataFrame score_fss(NumericMatrix fc, NumericMatrix ob,
     // turn into a field value 0/1
     for (x=0; x<ni; x++) {
       for (y=0; y<nj; y++) {
-        fc2(x,y) = (fc(x,y) >= thresholds(i)) ? 1 : 0 ;
-        ob2(x,y) = (ob(x,y) >= thresholds(i)) ? 1 : 0 ;
+        fc2(x,y) = (fcfield(x,y) >= thresholds(i)) ? 1 : 0 ;
+        ob2(x,y) = (obfield(x,y) >= thresholds(i)) ? 1 : 0 ;
       }
     }
 //    fc2(_,_) = int(fc(_,_) > thresholds(i)) ;
@@ -111,7 +111,7 @@ DataFrame score_fss(NumericMatrix fc, NumericMatrix ob,
 
   return Rcpp::DataFrame::create(Named("threshold")=res_thresh,
                                  Named("scale")=res_size,
-                                 Named("fss")=res_fss);
+                                 Named("value")=res_fss);
 }
   
 

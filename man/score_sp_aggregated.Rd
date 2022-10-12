@@ -4,12 +4,14 @@
 \alias{score_sp_aggregated}
 \title{Run spatial verification for 1 case}
 \usage{
-score_sp_aggregated(obfield, fcfield)
+score_sp_aggregated(obfield, fcfield, ...)
 }
 \arguments{
 \item{obfield}{Observation grid.}
 
-\item{fcfield}{Forecast field
+\item{fcfield}{Forecast field}
+
+\item{...}{ignored
 return A 1-row tibble of scores}
 }
 \description{

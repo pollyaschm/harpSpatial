@@ -5,6 +5,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // sal_identify_objects
 List sal_identify_objects(NumericMatrix indat, double threshold, NumericVector maxobj);
 RcppExport SEXP _harpSpatial_sal_identify_objects(SEXP indatSEXP, SEXP thresholdSEXP, SEXP maxobjSEXP) {
@@ -54,16 +59,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // score_fss
-DataFrame score_fss(NumericMatrix fc, NumericMatrix ob, NumericVector thresholds, NumericVector window_sizes);
-RcppExport SEXP _harpSpatial_score_fss(SEXP fcSEXP, SEXP obSEXP, SEXP thresholdsSEXP, SEXP window_sizesSEXP) {
+DataFrame score_fss(NumericMatrix obfield, NumericMatrix fcfield, NumericVector thresholds, NumericVector window_sizes);
+RcppExport SEXP _harpSpatial_score_fss(SEXP obfieldSEXP, SEXP fcfieldSEXP, SEXP thresholdsSEXP, SEXP window_sizesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type fc(fcSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type ob(obSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type obfield(obfieldSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type fcfield(fcfieldSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type thresholds(thresholdsSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type window_sizes(window_sizesSEXP);
-    rcpp_result_gen = Rcpp::wrap(score_fss(fc, ob, thresholds, window_sizes));
+    rcpp_result_gen = Rcpp::wrap(score_fss(obfield, fcfield, thresholds, window_sizes));
     return rcpp_result_gen;
 END_RCPP
 }

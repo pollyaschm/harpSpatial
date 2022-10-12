@@ -1,4 +1,5 @@
 ### Fractions Skill Score
+###   OBSOLETE "pure-R" implementation
 ### Fast algorithm based on
 ### N. Faggian et al. (2015)
 
@@ -12,21 +13,22 @@
 ##         3. return the 3 components in stead of fss? Then you can accumulate over time.
 
 
-# @param forecast A data matrix
-# @param obs A data matrix that must have exactly the same dimensions
-# @param windows Window sizes in x and y direction as two column
-#   All values must be odd!
-# @thresholds A list of numerical thresholds
-fss <- function(forecast,
-                obs, 
+#' @param fcfield A data matrix
+#' @param obfield A data matrix that must have exactly the same dimensions
+#' @param windows Window sizes in x and y direction as two column
+#'   All values must be odd!
+#' @param thresholds A list of numerical thresholds
+fss <- function(obfield,
+                fcfield, 
                 windows = rbind(c(3, 3), c(5, 5)),
-                thresholds = c(1, 5, 15) ) {
-  if (any(dim(obs) != dim(forecast))) {
+                thresholds = c(1, 5, 15),
+                ...) {
+  if (any(dim(obfield) != dim(fcfield))) {
     stop("FC and OBS must have same dimensions.")
   }
-  nx <- dim(forecast)[1]
-  ny <- dim(forecast)[2]
-  nscales <- nrows(windows)
+  nx <- dim(fcfield)[1]
+  ny <- dim(fcfield)[2]
+  nscales <- nrow(windows)
   result <- NULL
 
   for (thr in thresholds) {
@@ -35,13 +37,13 @@ fss <- function(forecast,
 #                nx=as.integer(nx),
 #                ny=as.integer(ny))$indat
 #    sat.fc <- matrix(sat.fc, nrow=nx)
-    sat.fc <- apply(apply(forecast >= thr, 1, cumsum), 1, cumsum)
+    sat.fc <- apply(apply(fcfield >= thr, 1, cumsum), 1, cumsum)
 #    sat.obs <- .C("summed_area_table",
 #                indat=as.integer(obs>=thr),
 #                nx=as.integer(nx),
 #                ny=as.integer(ny))$indat
 #    sat.obs <- matrix(sat.obs, nrow=nx)
-    sat.obs <- apply(apply(obs >= thr, 1, cumsum), 1, cumsum)
+    sat.obs <- apply(apply(obfield >= thr, 1, cumsum), 1, cumsum)
 
     res <- data.frame(
       threshold = rep(thr, nscales),
@@ -52,7 +54,7 @@ fss <- function(forecast,
       fss2 = rep(NA, nscales)
     )
 
-    for (i in 1:nrows(windows)) {
+    for (i in 1:nrow(windows)) {
       # works best with odd numbers (symmetric around center)
       sx2 <- floor(windows[i, 1] / 2)
       sy2 <- floor(windows[i, 2] / 2)
