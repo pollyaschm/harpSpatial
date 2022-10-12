@@ -1,4 +1,34 @@
 # various spatial verification scores
+#' Calculate spatial scores
+#' @param score The score to calculate
+#' @param obfield A matrix containing the observation field
+#' @param fcfield A matrix containing the forecast field. Must have the same dimension as obfield.
+#' @param ... Other options that may depend on the score (like scale, threshold, ...)
+#' @export
+spatial_scores <- function(score = NULL, obfield = NULL, fcfield = NULL, ...) {
+  score_list <- list(
+                     "basic"   = list(fields = c("bias", "mse"), "func" = "score_sp_aggregated"),
+#                     "gridded" = list(fields = c("bias", "mse"), "func" = "score_sp_gridded"),
+                     "SAL"     = list(fields = c("S", "A", "L"), "func" = "SAL"),
+                     "FSS"     = list(fields = c("threshold", "scale", "value"), "func" = "score_fss")
+                     )
+  # if called without "score", return a list of all scores
+  if (is.null(score)) return(names(score_list))
+  else if (!is.element(score, names(score_list))) error("Unknown score ", score, ".\n")
+
+  # Derive table structure
+  table_structure <- spatial_score_table(score_list[[score]]$fields)
+  # if called without "obfield" and "fcfield", just return the table structure for the given score
+  if (is.null(obfield) && is.null(fcfield)) {
+    return(score_list[[score]])
+  }
+
+  # FIXME: we may be calling with options that are not recognised/used by the score
+  do.call(score_list[[score]]$func, obfield = obfield, fcfield = fcfield, ...)
+}
+
+
+
 
 #' Run "fuzzy" spatial verification for 1 case
 #'
@@ -8,13 +38,14 @@
 #' @param window_sizes A vector of (odd!) window sizes
 #' @return A tibble with columns for threshold, window_size and various scores.
 #' @export
-verify_fuzzy <- function(obfield, fcfield, thresholds, window_sizes, scores=list("fss")) {
+verify_fuzzy <- function(obfield, fcfield, thresholds, window_sizes) {
   # you  might as well calculate a fixed set: they're 'cheap'
   if (is.character(scores)) scores <- list(scores)
   if (any(window_sizes %% 2 != 1)) stop("Window sizes must be odd.")
 
   # basic preparation
   # TODO: field.type="Preciptation" ???
+  # TODO: different scores *may* require different scales/thresholds?
   # we use our optimised Rcpp fastSmooth code
 
   nthresh <- length(thresholds)
@@ -27,9 +58,9 @@ verify_fuzzy <- function(obfield, fcfield, thresholds, window_sizes, scores=list
 #    fss       = as.vector(vv$fss$values),
 #    hk        = as.vector(vv$multi.event$hk)
 #  )
-  # other scores are probably best added in the same call, so we only calculate fractions once
-  # but it may not matter, fact
-  score_fss(obfield, fcfield, thresholds, window_sizes)
+  # Some other scores are probably best added in the same call, so we only calculate fractions once
+  # but it may not matter so much...
+  list("fss" = score_fss(obfield, fcfield, thresholds, window_sizes))
 }
 
 #' Run spatial verification for 1 case
@@ -38,28 +69,21 @@ verify_fuzzy <- function(obfield, fcfield, thresholds, window_sizes, scores=list
 #' @param fcfield Forecast field
 #' return A 1-row tibble of scores
 #' @export
-verify_basic <- function(obfield, fcfield) {
-  ## all spatial scores that do not require a threshold, scale etc.
+score_sp_aggregated <- function(obfield, fcfield) {
+  ## basic spatial scores that do not require a threshold, scale etc.
   ## so for a given case (date, time, leadtime), every score is a single number.
   ## we store MSE, not RMSE, because eventually we may want to sum over a period, too.
 #  VXstats = c("ets", "hk", "f", "bias", "mse")
 #  s1 <- SpatialVx::vxstats(obfield, fcfield, which.stats = VXstats)
   dimxy <- prod(dim(obfield))
-  mse <- sum((fcfield - obfield)^2)/dimxy
-  bias <- sum(fcfield - obfield)/dimxy
-# TODO ets, hk, f not yet written out
-# TODO: baserate, anomaly correlation (needs climatology...)
-  try(sal <- SAL(fcfield, obfield, min.rain = 0.1))
 
   # put all together in a tibble
-  result <- tibble::tibble(
-    bias  = bias,
-    mse   = mse,
-    S     = sal$S,
-    A     = sal$A,
-    L     = sal$L
+  tibble::tibble(
+    bias  = sum((fcfield - obfield)^2)/dimxy,
+    mse   = sum((fcfield - obfield)^2)/dimxy
   )
-
-  result
 }
 
+#score_sp_gridded <- function(obfield, fcfield) {
+# return(fcfield - obfield)
+#}

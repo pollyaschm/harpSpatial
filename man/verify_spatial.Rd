@@ -4,16 +4,34 @@
 \alias{verify_spatial}
 \title{Run spatial verification on a (for now) deterministic forecast}
 \usage{
-verify_spatial(start_date, end_date, det_model, parameter,
-  lead_time = seq(0, 36, 3), lt_unit = "h", by = "6h",
-  fc_file_path = "", fc_file_template = "", fc_file_format = "fatar",
-  fc_options = list(), fc_interp_method = "closest",
-  fc_accumulation = NULL, ob_file_path = "", ob_file_template = "",
-  ob_file_format = "hdf5", ob_options = list(),
-  ob_interp_method = "closest", ob_accumulation = "15m",
-  verif_domain = NULL, use_mask = FALSE, box_sizes = c(1, 3, 5, 11,
-  21), thresholds = c(0.1, 1, 5, 10), sqlite_path = NULL,
-  sqlite_file = "harp_spatial_scores.sqlite", return_data = TRUE, ...)
+verify_spatial(
+  start_date,
+  end_date,
+  det_model,
+  parameter,
+  lead_time = seq(0, 36, 3),
+  lt_unit = "h",
+  by = "12h",
+  fc_file_path = "",
+  fc_file_template = "",
+  fc_file_format = "fa",
+  fc_options = list(),
+  fc_interp_method = "closest",
+  fc_accumulation = NULL,
+  ob_file_path = "",
+  ob_file_template = "",
+  ob_file_format = "hdf5",
+  ob_options = list(),
+  ob_interp_method = "closest",
+  ob_accumulation = "15m",
+  verif_domain = NULL,
+  use_mask = FALSE,
+  box_sizes = c(1, 3, 5, 11, 21),
+  thresholds = c(0.1, 1, 5, 10),
+  sqlite_path = NULL,
+  sqlite_file = "harp_spatial_scores.sqlite",
+  return_data = TRUE
+)
 }
 \arguments{
 \item{start_date}{Date of the first forecast to read.}
@@ -82,7 +100,7 @@ field to the verification grid.}
 accumulated parameters (e.g. precipitation). NULL signifies that the field is accumulated
 from the start of the model run. That is probably rare for observations. 
 Otherwise this should be a string containing a numerical value
-and a time unit, e.g. "15m" or "1h".}
+and a time unit, e.g. "15m" or "1h". "0" means an instantaneous value.}
 
 \item{verif_domain}{A \code{geodomain} that defines the common verification grid.}
 
@@ -96,14 +114,12 @@ this directory.}
 
 \item{sqlite_file}{Name of SQLite file.}
 
-\item{return_data}{= TRUE,}
+\item{return_data}{If TRUE, the result is returned as a list of tables.}
 
-\item{...}{Arguments dependent on \code{file_format}, passed to to read_grid_interpolate.
-(More info to be added).}
+\item{...}{Not used at thispoint (more info to be added).}
 }
 \value{
-A list containting two data frames: \code{spatial_scores} and
-  \code{spatial_threshold_scores}.
+A list containting tibbles for all scores.
 }
 \description{
 Run spatial verification on a (for now) deterministic forecast

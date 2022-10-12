@@ -17,6 +17,7 @@
 #' @param min.rain The minimum value to be considered
 #' @param add.objs If TRUE, the object matrices are returned as attributes of the result.
 #' @return a vector with S, A, L values.
+#' @param ... Ignored options.
 #' @export
 "SAL" <- function(fcfield, obfield,
                   threshScale = 15.,
@@ -25,7 +26,8 @@
                   sameThreshold = FALSE,
                   maxobj = 1000,
                   min.rain = 1.0,
-                  add.objs = FALSE) {
+                  add.objs = FALSE,
+                  ...) {
     # set common threshold, if required
     if (sameThreshold) {
       threshold <- rep(max(threshold), 2)

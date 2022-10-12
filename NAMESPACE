@@ -2,8 +2,8 @@
 
 export(SAL)
 export(sal_identify_objects)
-export(save_spatial_verif)
-export(verify_basic)
+export(score_sp_aggregated)
+export(spatial_scores)
 export(verify_fuzzy)
 export(verify_spatial)
 importFrom(Rcpp,sourceCpp)

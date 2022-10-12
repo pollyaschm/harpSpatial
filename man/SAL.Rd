@@ -4,10 +4,18 @@
 \alias{SAL}
 \title{SAL score}
 \usage{
-SAL(fcfield, obfield, threshScale = 15, threshold = pmax(0.1,
-  c(max(fcfield, na.rm = TRUE), max(obfield, na.rm = TRUE)))/threshScale,
-  sameThreshold = FALSE, maxobj = 1000, min.rain = 1,
-  add.objs = FALSE)
+SAL(
+  fcfield,
+  obfield,
+  threshScale = 15,
+  threshold = pmax(0.1, c(max(fcfield, na.rm = TRUE), max(obfield, na.rm =
+    TRUE)))/threshScale,
+  sameThreshold = FALSE,
+  maxobj = 1000,
+  min.rain = 1,
+  add.objs = FALSE,
+  ...
+)
 }
 \arguments{
 \item{fcfield}{The forecast field}
@@ -23,6 +31,8 @@ SAL(fcfield, obfield, threshScale = 15, threshold = pmax(0.1,
 \item{min.rain}{The minimum value to be considered}
 
 \item{add.objs}{If TRUE, the object matrices are returned as attributes of the result.}
+
+\item{...}{Ignored options.}
 
 \item{threshscale}{Used for threshold}
 }

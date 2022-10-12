@@ -58,10 +58,10 @@
 #' @param sqlite_path If specified, SQLite files are generated and written to
 #'   this directory.
 #' @param sqlite_file Name of SQLite file.
+#' @param return_data If TRUE, the result is returned as a list of tables.
 #' @param ... Not used at thispoint (more info to be added).
 #'
-#' @return A list containting two data frames: \code{spatial_scores} and
-#'   \code{spatial_threshold_scores}.
+#' @return A list containting tibbles for all scores.
 #' @export
 
 verify_spatial <- function(start_date,
@@ -134,9 +134,10 @@ verify_spatial <- function(start_date,
     unique() %>%
     sort()
 
-  message(paste(all_fc_dates, collapse = " "))
-  message(paste(all_ob_dates, collapse = " "))
-  message(paste(lead_time / lt_scale, collapse = " "))
+  message("Running spatial verification.")
+  message("Forecast dates: ", paste(all_fc_dates, collapse = " "))
+  message("Lead times: ", paste(lead_time / lt_scale, collapse = " "))
+  message("Observation dates: ", paste(all_ob_dates, collapse = " "))
   # the re-gridding weights will come here:
   init <- list()
 
@@ -151,6 +152,10 @@ verify_spatial <- function(start_date,
   ob_param <- prm
   ob_param$accum <- readr::parse_number(ob_accumulation) * 
                     harpIO:::units_multiplier(ob_accumulation)
+  # FIXME: avoid reading domain information for every file (obs and fc)
+  #        BUT: we need it once to initialise the regridding. Use "get_domain(file)".
+  # FIXME: should we do the regridding within the read_grid call?
+
   get_ob <- function(obdate) {
     obfile <- get_filenames(
       file_date     = format(obdate, "%Y%m%d%H"),
@@ -177,33 +182,19 @@ verify_spatial <- function(start_date,
                        fc_options))
   }
   # We will write to SQL only at the end (more efficient),
-  # Define the tables  and vectors at full size, so you don't have to add rows.
   ncases <- length(all_fc_dates) * length(lead_time)
   message("ncases= ", ncases)
 
-  # Most efficient (?): create full table at the start
-  # it may be too long if there are missing cases, but that is not so bad
+  score_list <- spatial_scores()
 
-  scores <- if (return_data) list() else NULL
-  for(sc in c("basic", "fuzzy")) {
-    t1 <- spatial_score_table(sc)
-    nrows <- switch(sc,
-                    "basic" = ncases,
-                    "fuzzy" = ncases * length(thresholds) * length(box_sizes),
-                    NA)
-    template <- lapply(t1$fields, 
-                       function(x) switch(x, 
-                                          "CHARACTER" = NA_character_,
-                                          "INTEGER"   = NA_integer_, 
-                                          "REAL"      = NA_real_,
-                                          NA_real_))
-    scores[[sc]] <- do.call(tibble::tibble, c(template, .rows = nrows))
-    scores[[sc]]$model <- det_model
-    scores[[sc]]$prm   <- parameter
-  }
+#  score_templates <- lapply(names(score_list), function(sc) spatial_scores(score = sc))
+#  names(score_templates) <- score_list
 
-  #scores_basic <- vector("list", ncases)
-  #scores_fuzzy <- vector("list", ncases)
+  # Define the list of score tables.
+  scores <- vector("list", length(score_list))
+  names(scores) <- score_list
+
+
   # MAIN LOOP
   case <- 1
   for (ob in seq_along(all_ob_dates)) {  # (obdate in all_ob_dates) looses POSIXct class
@@ -238,7 +229,7 @@ verify_spatial <- function(start_date,
     # convert to common verification grid
     if (!is.null(ob_interp_method)) {
       if (is.null(init$regrid_ob)) {
-        message("Initialising ob regridding.")
+        message("Initialising observation regridding.")
         init$regrid_ob <- meteogrid::regrid.init(
           olddomain = obfield,
           newdomain = verif_domain,
@@ -307,21 +298,39 @@ verify_spatial <- function(start_date,
       ### NOW WE COMPUTE SCORES ###
       #############################
 
-      # Basic (non-threshold)
-      sc <- verify_basic(obfield, fcfield)
-#      scores[["basic"]]$fcdate[case]   <- as.numeric(fcdate)
-      scores[["basic"]]$fcdate[case]   <- as.numeric(format(fcdate, "%Y%m%d"))
-      scores[["basic"]]$fctime[case]   <- as.numeric(format(fcdate, "%H"))
-      scores[["basic"]]$leadtime[case] <- ldt/lt_scale
-      scores[["basic"]][case, names(sc)] <- sc
-
-      # "fuzzy" (threshold & box_size)
-      sc <- verify_fuzzy(obfield, fcfield, thresholds, box_sizes)
-      intv <- seq_len(dim(sc)[1]) + (case - 1) * dim(sc)[1]
-      scores[["fuzzy"]]$fcdate[intv]   <- as.numeric(format(fcdate, "%Y%m%d"))
-      scores[["fuzzy"]]$fctime[intv]   <- as.numeric(format(fcdate, "%H"))
-      scores[["fuzzy"]]$leadtime[intv] <- ldt / lt_scale
-      scores[["fuzzy"]][intv, names(sc)] <- sc
+      for (sn in seq_along(score_list)) {
+        # NOTE: in this loop approach, we should add all possible parameters in every call
+        #       even if a particular score will not use them...
+        # FIXME: Some scores (e.g. SAL) have various other parameters that we can't pass yet...
+        sc <- spatial_scores(score = score_list[i],
+                             obfield = obfield,
+                             fcfield = fcfield,
+                             thresholds = thresholds,
+                             box_sizes = box_sizes
+                             )
+        # we use the first case to build the full score table
+        if (is.null(scores[[sn]])) {
+          template <- spatial_score_table(spatial_scores(score_list[sn])$fields)
+          tbl_struct <- lapply(template$fields, 
+                               function(x) switch(x, 
+                                           "CHARACTER" = NA_character_,
+                                           "INTEGER"   = NA_integer_, 
+                                           "REAL"      = NA_real_,
+                                           NA_real_))
+          scores[[sc]] <- do.call(tibble::tibble, c(tbl_struct, .rows = ncases * dim(sc)[1]))
+          # we can already fill some constant columns
+          if ("model" %in% names(scores[[sc]])) scores[[sc]]$model <- det_model
+          if ("prm" %in% names(scores[[sc]]))   scores[[sc]]$prm   <- parameter
+        }
+        # which interval of the score table is to be filled (may be only 1 row -> score[case, ...])
+        intv <- seq_len(dim(sc)[1]) + (case - 1) * dim(sc)[1]
+        # NOTE: save fcdate as unix date, leadtime in seconds !
+        scores[[sc]]$fcdate[intv] <- as.numeric(fcdate)
+        scores[[sc]]$leadtime[intv] <- ldt
+        scores[[sc]][intv, names(sc)] <- sc
+        scores[[sc]]$fcdate[intv] <- as.numeric(fcdate)
+      }
+      # TODO: ensemble scores
 
       case <- case + 1
     } # fcdate
@@ -331,9 +340,6 @@ verify_spatial <- function(start_date,
     ncases <- case - 1
   }
 
-#  table_basic <- do.call(rbind, scores_basic)
-#  table_fuzzy <- do.call(rbind, scores_fuzzy)
-
   ## write to SQLite
   if (!is.null(sqlite_path)) {
     save_spatial_verif(scores, sqlite_path, sqlite_file)
@@ -342,21 +348,23 @@ verify_spatial <- function(start_date,
   if (return_data) invisible(scores)
   else invisible(NULL)
 }
+
 #' Save spatial scores to SQLite
 #' @param scores A list of spatial score tables
 #' @param sqlite_path The path for the sqlite file
 #' @param sqlite_file The file to which the tables are written or added
-#' @export
 save_spatial_verif <- function(scores, sqlite_path, sqlite_file) {
   db_file <- paste(sqlite_path, sqlite_file, sep = "/")
   message("Writing to SQLite file ", db_file)
   db <- harpIO:::dbopen(db_file)
   for (sc in names(scores)) {
     # check for score table and create if necessary
-    tab <- spatial_score_table(sc)
-    harpIO:::create_table(db, tab$name, tab$fields, tab$primary)
+    tab <- spatial_score_table(spatial_scores(score = sc)$fields)
+    # drop empty rows (missing cases)
+    harpIO:::create_table(db, sc, tab$fields, tab$primary)
+    # TODO: should we drop all cases were any field is missing?
     ok <- !is.na(scores[[sc]][, "fcdate"])
-    cat(sc, ":", dim(scores[[sc]])[1], length(ok), "\n")
+    message(sc, ":", dim(scores[[sc]])[1], length(ok))
     harpIO:::dbwrite(db, sc, scores[[sc]][ok, ])
   }
 
