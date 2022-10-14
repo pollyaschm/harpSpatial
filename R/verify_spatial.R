@@ -2,19 +2,23 @@
 #'
 #' @param start_date Date of the first forecast to read.
 #' @param end_date Date of the last forecast to read.
-#' @param det_model The name of the deterministic model. Maybe expressed as a
-#'   vector if more than one model is wanted.
+#' @param model The name of the (deterministic or EPS) model.
 #' @param parameter The parameters to read as a character vector.
 #' @param lead_time The lead times to read as a numeric vector.
+#'   Should be in the units that are also used in fc_file_template.
+#' @param lt_unit The unit used for lead_time. Can be "h" (hours), "m" (minutes), "s" (seconds)
 #' @param by The time between forecasts. Should be a string of a number followed
-#'   by a letter, where the letter gives the units - may be d for days, h for
-#'   hours or m for minutes.
+#'   by a letter, where the letter gives the units - may be "d" for days, "h" for
+#'   hours or "m" for minutes.
+#' @param members The (numbers of the) ensemble members to read. While Netcdf and grib2 files 
+#'   can contain multiple members, for other formats we assume they are in separate files
+#'   (see also fc_file_template)
 #' @param fc_file_path The top level path for the forecast files to read.
 #' @param fc_file_template The file type to generate the template for. Can be
 #'   "harmoneps_grib", "harmeoneps_grib_fp", "harmoneps_grib_sfx", "meps_met",
 #'   "harmonie_grib", "harmonie_grib_fp", "harmone_grib_sfx", "vfld", "vobs", or
 #'   "fctable". If anything else is passed, it is returned unmodified. In this
-#'   case substitutions can be used. Available substitutions are {YYYY} for
+#'   case substitutions can be used. Available substitutions are \{YYYY\} for
 #'   year, \{MM\} for 2 digit month with leading zero, \{M\} for month with no
 #'   leading zero, and similarly \{DD\} or \{D\} for day, \{HH\} or \{H\} for
 #'   hour, \{mm\} or \{m\} for minute. Also \{LDTx\} for lead time and \{MBRx\}
@@ -66,11 +70,12 @@
 
 verify_spatial <- function(start_date,
                            end_date,
-                           det_model,
                            parameter,
+                           model                = harpSpatial_conf$model,
                            lead_time            = seq(0, 36, 3),
                            lt_unit              = "h",
                            by                   = "12h",
+                           members              = NULL,
                            fc_file_path         = "",
                            fc_file_template     = "",
                            fc_file_format       = "fa",
@@ -168,22 +173,52 @@ verify_spatial <- function(start_date,
                    parameter = ob_param), ob_options))
   }
 
-  get_fc <- function(fcdate, lead_time) {
-    fcfile <- get_filenames(
-      file_date = fcdate,
-      lead_time = lead_time,
-      parameter = parameter,
-      det_model = det_model,
-      file_path = fc_file_path,
-      file_template = fc_file_template)
-    do.call(harpIO::read_grid,
-      c(list(file_name = fcfile, file_format = fc_file_format, 
+  # FIXME: if (!is.null(members) && length(members) > 1)
+  # NOTE: lead_time in original units
+  # FIXME: det_model vs eps_model...
+  # FIXME: for eps, either read_grid on single netcdf/grib2 or on multiple FA/GRIB
+  # if "members" is defined (and length > 1) but {MBRx} is not in the template -> single file
+  if (is.null(members)) {
+    get_fc <- function(fcdate, lead_time) {
+      fcfile <- get_filenames(
+        file_date = fcdate,
+        lead_time = lead_time,
+        parameter = parameter,
+        det_model = model,
+        file_path = fc_file_path,
+        file_template = fc_file_template)
+      do.call(harpIO::read_grid,
+        c(list(file_name = fcfile, file_format = fc_file_format, 
                    parameter = parameter, lead_time = lead_time),
                        fc_options))
+    }
+  } else {
+    # for EPS models, we try to get the members into a 3D geogrid array.
+    # very fast for passing to Rccp functions.
+    get_fc <- function(fcdate, lead_time) {
+      fcfile <- get_filenames(
+        file_date = fcdate,
+        lead_time = lead_time,
+        parameter = parameter,
+        eps_model = model,
+        members   = members,
+        file_path = fc_file_path,
+        file_template = fc_file_template)
+      if (length(fcfile) == 1) {
+        do.call(harpIO::read_grid,
+                c(list(file_name = fcfile, file_format = fc_file_format, 
+                  parameter = parameter, lead_time = lead_time),
+                  fc_options))
+      } else {
+        lapply(fcfile, harpIO::read_grid, file_format = fc_file_format, 
+                parameter = parameter, lead_time = lead_time, members=members,
+                unlist(fc_options))
+      }
+    }
   }
   # We will write to SQL only at the end (more efficient),
   ncases <- length(all_fc_dates) * length(lead_time)
-  message("ncases= ", ncases)
+  message("expected ncases= ", ncases)
 
   score_list <- spatial_scores()
 

@@ -7,11 +7,12 @@
 verify_spatial(
   start_date,
   end_date,
-  det_model,
   parameter,
+  model = harpSpatial_conf$model,
   lead_time = seq(0, 36, 3),
   lt_unit = "h",
   by = "12h",
+  members = NULL,
   fc_file_path = "",
   fc_file_template = "",
   fc_file_format = "fa",
@@ -38,16 +39,22 @@ verify_spatial(
 
 \item{end_date}{Date of the last forecast to read.}
 
-\item{det_model}{The name of the deterministic model. Maybe expressed as a
-vector if more than one model is wanted.}
-
 \item{parameter}{The parameters to read as a character vector.}
 
-\item{lead_time}{The lead times to read as a numeric vector.}
+\item{model}{The name of the (deterministic or EPS) model.}
+
+\item{lead_time}{The lead times to read as a numeric vector.
+Should be in the units that are also used in fc_file_template.}
+
+\item{lt_unit}{The unit used for lead_time. Can be "h" (hours), "m" (minutes), "s" (seconds)}
 
 \item{by}{The time between forecasts. Should be a string of a number followed
-by a letter, where the letter gives the units - may be d for days, h for
-hours or m for minutes.}
+by a letter, where the letter gives the units - may be "d" for days, "h" for
+hours or "m" for minutes.}
+
+\item{members}{The (numbers of the) ensemble members to read. While Netcdf and grib2 files 
+can contain multiple members, for other formats we assume they are in separate files
+(see also fc_file_template)}
 
 \item{fc_file_path}{The top level path for the forecast files to read.}
 
@@ -55,7 +62,7 @@ hours or m for minutes.}
 "harmoneps_grib", "harmeoneps_grib_fp", "harmoneps_grib_sfx", "meps_met",
 "harmonie_grib", "harmonie_grib_fp", "harmone_grib_sfx", "vfld", "vobs", or
 "fctable". If anything else is passed, it is returned unmodified. In this
-case substitutions can be used. Available substitutions are {YYYY} for
+case substitutions can be used. Available substitutions are \{YYYY\} for
 year, \{MM\} for 2 digit month with leading zero, \{M\} for month with no
 leading zero, and similarly \{DD\} or \{D\} for day, \{HH\} or \{H\} for
 hour, \{mm\} or \{m\} for minute. Also \{LDTx\} for lead time and \{MBRx\}

@@ -5,11 +5,6 @@
 
 using namespace Rcpp;
 
-#ifdef RCPP_USE_GLOBAL_ROSTREAM
-Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
-Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
-#endif
-
 // sal_identify_objects
 List sal_identify_objects(NumericMatrix indat, double threshold, NumericVector maxobj);
 RcppExport SEXP _harpSpatial_sal_identify_objects(SEXP indatSEXP, SEXP thresholdSEXP, SEXP maxobjSEXP) {
@@ -34,15 +29,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// window_mean_from_cumsum
-NumericMatrix window_mean_from_cumsum(NumericMatrix indat, int wsize);
-RcppExport SEXP _harpSpatial_window_mean_from_cumsum(SEXP indatSEXP, SEXP wsizeSEXP) {
+// cumsum2d_bin
+NumericMatrix cumsum2d_bin(NumericMatrix indat, float threshold);
+RcppExport SEXP _harpSpatial_cumsum2d_bin(SEXP indatSEXP, SEXP thresholdSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericMatrix >::type indat(indatSEXP);
-    Rcpp::traits::input_parameter< int >::type wsize(wsizeSEXP);
-    rcpp_result_gen = Rcpp::wrap(window_mean_from_cumsum(indat, wsize));
+    Rcpp::traits::input_parameter< float >::type threshold(thresholdSEXP);
+    rcpp_result_gen = Rcpp::wrap(cumsum2d_bin(indat, threshold));
+    return rcpp_result_gen;
+END_RCPP
+}
+// window_mean_from_cumsum
+NumericMatrix window_mean_from_cumsum(NumericMatrix indat, int rad);
+RcppExport SEXP _harpSpatial_window_mean_from_cumsum(SEXP indatSEXP, SEXP radSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type indat(indatSEXP);
+    Rcpp::traits::input_parameter< int >::type rad(radSEXP);
+    rcpp_result_gen = Rcpp::wrap(window_mean_from_cumsum(indat, rad));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -55,6 +62,18 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericMatrix >::type indat(indatSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type radius(radiusSEXP);
     rcpp_result_gen = Rcpp::wrap(windowMean(indat, radius));
+    return rcpp_result_gen;
+END_RCPP
+}
+// fss_from_fractions
+double fss_from_fractions(NumericMatrix m1, NumericMatrix m2);
+RcppExport SEXP _harpSpatial_fss_from_fractions(SEXP m1SEXP, SEXP m2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type m1(m1SEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type m2(m2SEXP);
+    rcpp_result_gen = Rcpp::wrap(fss_from_fractions(m1, m2));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -76,8 +95,10 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_harpSpatial_sal_identify_objects", (DL_FUNC) &_harpSpatial_sal_identify_objects, 3},
     {"_harpSpatial_cumsum2d", (DL_FUNC) &_harpSpatial_cumsum2d, 1},
+    {"_harpSpatial_cumsum2d_bin", (DL_FUNC) &_harpSpatial_cumsum2d_bin, 2},
     {"_harpSpatial_window_mean_from_cumsum", (DL_FUNC) &_harpSpatial_window_mean_from_cumsum, 2},
     {"_harpSpatial_windowMean", (DL_FUNC) &_harpSpatial_windowMean, 2},
+    {"_harpSpatial_fss_from_fractions", (DL_FUNC) &_harpSpatial_fss_from_fractions, 2},
     {"_harpSpatial_score_fss", (DL_FUNC) &_harpSpatial_score_fss, 4},
     {NULL, NULL, 0}
 };
