@@ -14,15 +14,16 @@ harpSpatial_conf <- NULL
     harpSpatial_conf <<- new.env(parent=baseenv()) 
   }
 
+  # we always start by defining all default options
   config_file <- file.path(libname, packagename, "conf/default_conf.R")
 #  print(config_file)
-  # we always start by defining all default options
-  source(config_file, local=harpSpatial_conf)
+  # it should always exist /after installation/, but roxygen2 can get confused
+  if (file.exists(config_file)) source(config_file, local=harpSpatial_conf)
 
   # now look for local config
   config_file <- Sys.getenv("HARP_SPATIAL_CONFIG")
   if (config_file != "") {
-    harpSpatial_config(config_file)
+    harpSpatial_read_config(config_file)
   }
 
 }

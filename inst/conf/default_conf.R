@@ -9,17 +9,24 @@ fc_file_format       = "fa"
 fc_options           = list()
 fc_interp_method     = "closest"
 fc_accumulation      = NULL
+
+# OBS
 ob_file_path         = ""
 ob_file_template     = ""
 ob_file_format       = "hdf5"
 ob_options           = list()
 ob_interp_method     = "closest"
 ob_accumulation      = "15m"
+
+# VERIFICATION DOMAIN
 verif_domain         = NULL
 use_mask             = FALSE
+
+# SCORE DETAILS: thresholds etc.
 window_sizes         = c(0, 1, 2, 4, 8, 12, 20)
 thresholds           = c(0.1, 1, 5, 10)
+
+# OUTPUT
 sqlite_path          = NULL
 sqlite_file          = "harp_spatial_scores.sqlite"
-return_data          = TRUE
 

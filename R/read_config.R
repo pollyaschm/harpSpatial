@@ -4,7 +4,7 @@
 #' @param config_file The name of the config file to be read.
 #'   If NULL, the current configuration is printed.
 #' @export
-harpSpatial_config <- function(config_file = NULL) {
+harpSpatial_read_config <- function(config_file = NULL) {
   if (is.null(config_file)) {
     sapply(ls(harpSpatial_conf), function(x) get(x, envir=harpSpatial_conf))
   } else {
