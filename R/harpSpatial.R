@@ -2,6 +2,8 @@
 ##' @importFrom Rcpp sourceCpp
 
 # .onAttach <- function(libname, packagename) {
+# TODO: in stead of a default config file
+#       we could also just have the default values in here.
 harpSpatial_conf <- NULL
 
 .onLoad <- function(libname, packagename) {

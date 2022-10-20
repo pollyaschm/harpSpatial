@@ -105,11 +105,12 @@ verify_spatial <- function(start_date,
   # because that would cause excessive re-reading (or caching) of observations.
   # Rather, we loop over all observation times 
   # and then over all forecasts valid for those times.
-  # Close to start_date and end_date you must make sure not to beyond the time window.
-  # TODO: to be even more efficient, you should try to
+  # Close to start_date and end_date you must make sure not to read beyond the time window.
+  # TODO: to be even more efficient, we could try to
   #       - open (&parse) FC fields only once
   #       - read accumulated fields only once (e.g. "acc3h = 6h - 3h" also re-uses 
   #                                            the 3h field) 
+  #       But that would require extensive "caching", which may end up even slower.
   # Alternative strategy: loop by fcdate, and cache all obs in a list by leadtime
   #     next fcdate -> "ldt -= by" ; drop negative ldt ; read missing obs
   # For an accumulated variable (precip), the minimum lead time is 
@@ -142,7 +143,7 @@ verify_spatial <- function(start_date,
   message("Running spatial verification.")
   message("Forecast dates: ", paste(all_fc_dates, collapse = " "))
   message("Lead times: ", paste(lead_time / lt_scale, collapse = " "))
-  message("Observation dates: ", paste(all_ob_dates, collapse = " "))
+  message("Observation dates: ", paste(all_ob_dates, collapse = " ; "))
   # the re-gridding weights will come here:
   init <- list()
 

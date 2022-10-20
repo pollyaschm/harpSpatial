@@ -6,11 +6,14 @@
 #' @param ... Other options that may depend on the score (like scale, threshold, ...)
 #' @export
 spatial_scores <- function(score = NULL, obfield = NULL, fcfield = NULL, ...) {
+  # TODO: add score options, plot_func and plot_opt
   score_list <- list(
-                     "basic"   = list(fields = c("bias", "mse"), "func" = "score_sp_aggregated"),
+                     "bias"   = list(fields = c("bias"), "func" = "score_sp_aggregated"),
+                     "mse"    = list(fields = c("mse"), "func" = "score_sp_aggregated"),
 #                     "gridded" = list(fields = c("bias", "mse"), "func" = "score_sp_gridded"),
                      "SAL"     = list(fields = c("S", "A", "L"), "func" = "SAL"),
-                     "FSS"     = list(fields = c("threshold", "scale", "value"), "func" = "score_fss")
+                     "FSS"     = list(fields = c("threshold", "scale", "value"), "func" = "score_fss"),
+                     "FSS_p"     = list(fields = c("percentile", "scale", "value"), "func" = "score_fss")
                      )
   # if called without "score", return a list of all scores
   if (is.null(score)) return(names(score_list))
@@ -70,7 +73,7 @@ verify_fuzzy <- function(obfield, fcfield, thresholds, window_sizes, ...) {
 #' @param ... ignored
 #' return A 1-row tibble of scores
 #' @export
-score_sp_aggregated <- function(obfield, fcfield, ...) {
+score_sp_bias <- function(obfield, fcfield, ...) {
   ## basic spatial scores that do not require a threshold, scale etc.
   ## so for a given case (date, time, leadtime), every score is a single number.
   ## we store MSE, not RMSE, because eventually we may want to sum over a period, too.
@@ -80,7 +83,27 @@ score_sp_aggregated <- function(obfield, fcfield, ...) {
 
   # put all together in a tibble
   tibble::tibble(
-    bias  = sum((fcfield - obfield)^2)/dimxy,
+    bias  = sum(fcfield - obfield)/dimxy,
+  )
+}
+
+#' Run spatial verification for 1 case
+#'
+#' @param obfield Observation grid.
+#' @param fcfield Forecast field
+#' @param ... ignored
+#' return A 1-row tibble of scores
+#' @export
+score_sp_mse <- function(obfield, fcfield, ...) {
+  ## basic spatial scores that do not require a threshold, scale etc.
+  ## so for a given case (date, time, leadtime), every score is a single number.
+  ## we store MSE, not RMSE, because eventually we may want to sum over a period, too.
+#  VXstats = c("ets", "hk", "f", "bias", "mse")
+#  s1 <- SpatialVx::vxstats(obfield, fcfield, which.stats = VXstats)
+  dimxy <- prod(dim(obfield))
+
+  # put all together in a tibble
+  tibble::tibble(
     mse   = sum((fcfield - obfield)^2)/dimxy
   )
 }
@@ -88,3 +111,4 @@ score_sp_aggregated <- function(obfield, fcfield, ...) {
 #score_sp_gridded <- function(obfield, fcfield) {
 # return(fcfield - obfield)
 #}
+
