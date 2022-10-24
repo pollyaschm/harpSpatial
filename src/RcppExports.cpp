@@ -5,6 +5,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // harpSpatial_basic_scores
 DataFrame harpSpatial_basic_scores(NumericMatrix obfield, NumericMatrix fcfield);
 RcppExport SEXP _harpSpatial_harpSpatial_basic_scores(SEXP obfieldSEXP, SEXP fcfieldSEXP) {
@@ -89,9 +94,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// harpSpatial_scores_neighborhood
-DataFrame harpSpatial_scores_neighborhood(NumericMatrix obfield, NumericMatrix fcfield, NumericVector thresholds, NumericVector scales);
-RcppExport SEXP _harpSpatial_harpSpatial_scores_neighborhood(SEXP obfieldSEXP, SEXP fcfieldSEXP, SEXP thresholdsSEXP, SEXP scalesSEXP) {
+// harpSpatial_neighborhood_scores
+DataFrame harpSpatial_neighborhood_scores(NumericMatrix obfield, NumericMatrix fcfield, NumericVector thresholds, NumericVector scales);
+RcppExport SEXP _harpSpatial_harpSpatial_neighborhood_scores(SEXP obfieldSEXP, SEXP fcfieldSEXP, SEXP thresholdsSEXP, SEXP scalesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -99,7 +104,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericMatrix >::type fcfield(fcfieldSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type thresholds(thresholdsSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type scales(scalesSEXP);
-    rcpp_result_gen = Rcpp::wrap(harpSpatial_scores_neighborhood(obfield, fcfield, thresholds, scales));
+    rcpp_result_gen = Rcpp::wrap(harpSpatial_neighborhood_scores(obfield, fcfield, thresholds, scales));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -112,7 +117,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_harpSpatial_window_mean_from_cumsum", (DL_FUNC) &_harpSpatial_window_mean_from_cumsum, 2},
     {"_harpSpatial_windowMean", (DL_FUNC) &_harpSpatial_windowMean, 2},
     {"_harpSpatial_fss_from_fractions", (DL_FUNC) &_harpSpatial_fss_from_fractions, 2},
-    {"_harpSpatial_harpSpatial_scores_neighborhood", (DL_FUNC) &_harpSpatial_harpSpatial_scores_neighborhood, 4},
+    {"_harpSpatial_harpSpatial_neighborhood_scores", (DL_FUNC) &_harpSpatial_harpSpatial_neighborhood_scores, 4},
     {NULL, NULL, 0}
 };
 

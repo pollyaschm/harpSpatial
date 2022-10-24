@@ -4,6 +4,7 @@
 using namespace Rcpp;
 
 typedef std::vector<int> int_vector;
+
 //' @export
 // [[Rcpp::export]]
 List sal_identify_objects(NumericMatrix indat, double threshold,
@@ -14,7 +15,7 @@ List sal_identify_objects(NumericMatrix indat, double threshold,
   double pmax;
   int nobj = 0, kb;
   int_vector ib(ni*nj), jb(ni*nj),  ibn(ni*nj), jbn(ni*nj);
-  int nb, nbn, ii, jj;
+  int nb, nbn;
   IntegerMatrix objects(ni, nj);
 
 //  Rcout << "SAL" << std::endl ;

@@ -15,8 +15,8 @@ spatial_scores <- function(score = NULL, obfield = NULL, fcfield = NULL, ...) {
 #                     "gridded" = list(fields = c("bias", "mse"), "func" = "score_sp_gridded"),
                      "SAL"     = list(fields = c("S", "A", "L"), "func" = "SAL"),
                      "FSS"     = list(fields = c("threshold", "scale", "fss"), "func" = "scores_sp_neighborhood"),
-                     "NACT"     = list(fields = c("threshold", "scale", "a", "b", "c", "d"), "func" = "scores_sp_neighborhood"),
-                     "FSS_p"     = list(fields = c("percentile", "scale", "fss"), "func" = "score_fss")
+                     "NACT"     = list(fields = c("threshold", "scale", "a", "b", "c", "d"), "func" = "scores_sp_neighborhood")
+#                     , "FSS_p"     = list(fields = c("percentile", "scale", "fss"), "func" = "score_fss")
                      )
 
   # if called without "score", return a list of all scores
@@ -40,7 +40,7 @@ spatial_scores <- function(score = NULL, obfield = NULL, fcfield = NULL, ...) {
 }
 
 # simple wrappers to deal with unwanted arguments
-# Yes, there are nicer ways...
+# Yes, there are probably nicer ways...
 
 #' @export
 scores_sp_basic <- function(obfield, fcfield, ...) {
@@ -49,6 +49,10 @@ scores_sp_basic <- function(obfield, fcfield, ...) {
 
 #' @export
 scores_sp_neighborhood <- function(obfield, fcfield, thresholds, scales, ...) {
+  message("obfield dimensions: ", paste(dim(obfield), collapse="x"))
+  message("fcfield dimensions: ", paste(dim(fcfield), collapse="x"))
+  message("thresholds", paste(thresholds, collapse=","))
+  message("scales", paste(thresholds, scales=","))
   harpSpatial_neighborhood_scores(obfield=obfield, fcfield=fcfield,
                                   thresholds=thresholds, scales=scales
   )

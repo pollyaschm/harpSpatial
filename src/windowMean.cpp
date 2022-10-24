@@ -108,15 +108,17 @@ double fss_from_fractions(NumericMatrix m1, NumericMatrix m2) {
 
 
 // [[Rcpp::export]]
-DataFrame harpSpatial_scores_neighborhood(NumericMatrix obfield, NumericMatrix fcfield,
+DataFrame harpSpatial_neighborhood_scores(NumericMatrix obfield, NumericMatrix fcfield,
                     NumericVector thresholds, NumericVector scales) {
   int i, j, k, th, sc;
   double a, b, c, dd ;
   double fss1, fss2 ;
   int n_thresholds=thresholds.length(), n_scales=scales.length();
-  int ni=fcfield.ncol(), nj=fcfield.nrow();
+  int ni=fcfield.nrow(), nj=fcfield.ncol();
+
   NumericMatrix frac_fc(ni,nj), frac_ob(ni,nj);
   NumericMatrix cum_fc(ni,nj), cum_ob(ni,nj);
+
   // numeric vectors for the result
   NumericVector res_thresh(n_thresholds * n_scales);
   NumericVector res_size(n_thresholds * n_scales);
@@ -151,14 +153,14 @@ DataFrame harpSpatial_scores_neighborhood(NumericMatrix obfield, NumericMatrix f
           // Neighborhood Adapted Contingency Table
           // ref Stein & Stoop 2019
           // method:
-          // f(ob) = a + b of unadapted contingency tab
-          // f(fc) = a + c of unadapted contingency tab
+          // f_fc = a + b of unadapted contingency tab
+          // f_ob = a + c of unadapted contingency tab
           // if the difference (b-c) is neg., min(b,c)=b
-          if ((dd = frac_ob(i,j)-frac_fc(i,j)) < 0) {
-            a += frac_ob(i,j) ;
+          if ((dd = frac_fc(i,j)-frac_ob(i,j)) < 0) {
+            a += frac_fc(i,j) ;
             c -= dd ;
           } else {
-            a += frac_fc(i,j) ;
+            a += frac_ob(i,j) ;
             b += dd ;
           }
           // TODO: Other scores

@@ -30,7 +30,7 @@ fss_from_fractions <- function(m1, m2) {
     .Call('_harpSpatial_fss_from_fractions', PACKAGE = 'harpSpatial', m1, m2)
 }
 
-harpSpatial_scores_neighborhood <- function(obfield, fcfield, thresholds, scales) {
-    .Call('_harpSpatial_harpSpatial_scores_neighborhood', PACKAGE = 'harpSpatial', obfield, fcfield, thresholds, scales)
+harpSpatial_neighborhood_scores <- function(obfield, fcfield, thresholds, scales) {
+    .Call('_harpSpatial_harpSpatial_neighborhood_scores', PACKAGE = 'harpSpatial', obfield, fcfield, thresholds, scales)
 }
 

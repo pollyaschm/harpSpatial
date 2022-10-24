@@ -75,6 +75,7 @@ verify_spatial <- function(start_date,
                            lead_time            = harpSpatial_conf$lead_time, # seq(0,36,3)
                            lt_unit              = harpSpatial_conf$lt_unit, #"h",
                            by                   = harpSpatial_conf$by, # "12h",
+                           scores               = NULL,
                            members              = harpSpatial_conf$members, #NULL,
 #                           members_out          = members,
 #                           lags                 = harpSpatial_conf$lags, #NULL,
@@ -223,8 +224,11 @@ verify_spatial <- function(start_date,
   ncases <- length(all_fc_dates) * length(lead_time)
   message("expected ncases= ", ncases)
 
-  score_list <- spatial_scores()
-
+  if (is.null(scores)) {
+    score_list <- spatial_scores()
+  } else {
+    score_list <- spatial_scores()[scores]
+  }
 #  score_templates <- lapply(names(score_list), function(sc) spatial_scores(score = sc))
 #  names(score_templates) <- score_list
 
@@ -353,8 +357,7 @@ verify_spatial <- function(start_date,
         myargs <- list(obfield=obfield, fcfield=fcfield,
                          thresholds = thresholds,
                          scales = window_sizes)
-        message("Calling ", sf)
-
+        message("--> Calling ", sf)
         multiscore <- do.call(sf, myargs)
 
         if (!is.null(multiscore)) {
@@ -363,10 +366,10 @@ verify_spatial <- function(start_date,
           # interval of rows for this case in full score table
           intv <- seq_len(nrow) + (case - 1) * nrow
           for (sn in score_function_subset[[sf]]) {
-            message("-----> Calling score ", score_list[[sn]])
+            message("-----> Calling score ", sn)
             sc <- multiscore[,score_list[[sn]]$fields]
             if (is.null(scores[[sn]])) {
-              template <- spatial_score_table(spatial_scores(score_list[sn])$fields)
+              template <- spatial_score_table(spatial_scores(sn)$fields)
               tbl_struct <- lapply(template$fields, 
                                    function(x) switch(x, 
                                              "CHARACTER" = NA_character_,
@@ -375,7 +378,7 @@ verify_spatial <- function(start_date,
                                              NA_real_))
               scores[[sn]] <- do.call(tibble::tibble, c(tbl_struct, .rows = ncases * nrow))
               # we can already fill some constant columns
-              if ("model" %in% names(scores[[sn]])) scores[[sn]]$model <- det_model
+              if ("model" %in% names(scores[[sn]])) scores[[sn]]$model <- model
               if ("prm" %in% names(scores[[sn]]))   scores[[sn]]$prm   <- parameter
             }
             # which interval of the score table is to be filled (may be only 1 row -> score[case, ...])
