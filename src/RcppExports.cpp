@@ -5,6 +5,18 @@
 
 using namespace Rcpp;
 
+// harpSpatial_basic_scores
+DataFrame harpSpatial_basic_scores(NumericMatrix obfield, NumericMatrix fcfield);
+RcppExport SEXP _harpSpatial_harpSpatial_basic_scores(SEXP obfieldSEXP, SEXP fcfieldSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type obfield(obfieldSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type fcfield(fcfieldSEXP);
+    rcpp_result_gen = Rcpp::wrap(harpSpatial_basic_scores(obfield, fcfield));
+    return rcpp_result_gen;
+END_RCPP
+}
 // sal_identify_objects
 List sal_identify_objects(NumericMatrix indat, double threshold, NumericVector maxobj);
 RcppExport SEXP _harpSpatial_sal_identify_objects(SEXP indatSEXP, SEXP thresholdSEXP, SEXP maxobjSEXP) {
@@ -77,29 +89,30 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// score_fss
-DataFrame score_fss(NumericMatrix obfield, NumericMatrix fcfield, NumericVector thresholds, NumericVector window_sizes);
-RcppExport SEXP _harpSpatial_score_fss(SEXP obfieldSEXP, SEXP fcfieldSEXP, SEXP thresholdsSEXP, SEXP window_sizesSEXP) {
+// harpSpatial_scores_neighborhood
+DataFrame harpSpatial_scores_neighborhood(NumericMatrix obfield, NumericMatrix fcfield, NumericVector thresholds, NumericVector scales);
+RcppExport SEXP _harpSpatial_harpSpatial_scores_neighborhood(SEXP obfieldSEXP, SEXP fcfieldSEXP, SEXP thresholdsSEXP, SEXP scalesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericMatrix >::type obfield(obfieldSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type fcfield(fcfieldSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type thresholds(thresholdsSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type window_sizes(window_sizesSEXP);
-    rcpp_result_gen = Rcpp::wrap(score_fss(obfield, fcfield, thresholds, window_sizes));
+    Rcpp::traits::input_parameter< NumericVector >::type scales(scalesSEXP);
+    rcpp_result_gen = Rcpp::wrap(harpSpatial_scores_neighborhood(obfield, fcfield, thresholds, scales));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_harpSpatial_harpSpatial_basic_scores", (DL_FUNC) &_harpSpatial_harpSpatial_basic_scores, 2},
     {"_harpSpatial_sal_identify_objects", (DL_FUNC) &_harpSpatial_sal_identify_objects, 3},
     {"_harpSpatial_cumsum2d", (DL_FUNC) &_harpSpatial_cumsum2d, 1},
     {"_harpSpatial_cumsum2d_bin", (DL_FUNC) &_harpSpatial_cumsum2d_bin, 2},
     {"_harpSpatial_window_mean_from_cumsum", (DL_FUNC) &_harpSpatial_window_mean_from_cumsum, 2},
     {"_harpSpatial_windowMean", (DL_FUNC) &_harpSpatial_windowMean, 2},
     {"_harpSpatial_fss_from_fractions", (DL_FUNC) &_harpSpatial_fss_from_fractions, 2},
-    {"_harpSpatial_score_fss", (DL_FUNC) &_harpSpatial_score_fss, 4},
+    {"_harpSpatial_harpSpatial_scores_neighborhood", (DL_FUNC) &_harpSpatial_harpSpatial_scores_neighborhood, 4},
     {NULL, NULL, 0}
 };
 

@@ -1,4 +1,4 @@
-// for fast FSS & other "fuzzy" score calculation
+// for fast FSS & other "neighborhood" ("fuzzy") score calculation
 // reference: N. Faggian et al. "Fast calculation of the franctions skill score"
 //            MAUSAM, 66 (2015) 457-466
 // 1. get the 'summed_area_table' for a given threshold (cumsum2d)
@@ -59,7 +59,7 @@ NumericMatrix window_mean_from_cumsum(NumericMatrix indat, int rad) {
   // TODO : other boundary options:
   //    - periodic or mirror
   //    - reduce rad close to border
-  int i, j, N, ni=indat.nrow(), nj=indat.ncol() ;
+  int i, j, ni=indat.nrow(), nj=indat.ncol() ;
   int imax, jmax;
   NumericMatrix result(ni, nj);
 
@@ -91,6 +91,7 @@ NumericMatrix windowMean(NumericMatrix indat, NumericVector radius) {
 
 // [[Rcpp::export]]
 double fss_from_fractions(NumericMatrix m1, NumericMatrix m2) {
+  // obsolete: use neighborhood_scores
   int ni=m1.ncol(), nj=m1.nrow();
   int i, j;
   double fss1=0., fss2=0.;
@@ -105,43 +106,80 @@ double fss_from_fractions(NumericMatrix m1, NumericMatrix m2) {
   return (1. - fss1/fss2) ;
 }
 
+
 // [[Rcpp::export]]
-DataFrame score_fss(NumericMatrix obfield, NumericMatrix fcfield,
-                    NumericVector thresholds, NumericVector window_sizes) {
-  int i, j, k;
-  int n_thresholds=thresholds.length(), n_sizes=window_sizes.length();
+DataFrame harpSpatial_scores_neighborhood(NumericMatrix obfield, NumericMatrix fcfield,
+                    NumericVector thresholds, NumericVector scales) {
+  int i, j, k, th, sc;
+  double a, b, c, dd ;
+  double fss1, fss2 ;
+  int n_thresholds=thresholds.length(), n_scales=scales.length();
   int ni=fcfield.ncol(), nj=fcfield.nrow();
-  NumericVector res_fss(n_thresholds * n_sizes);
-  NumericVector res_thresh(n_thresholds * n_sizes);
-  NumericVector res_size(n_thresholds * n_sizes);
   NumericMatrix frac_fc(ni,nj), frac_ob(ni,nj);
   NumericMatrix cum_fc(ni,nj), cum_ob(ni,nj);
-
+  // numeric vectors for the result
+  NumericVector res_thresh(n_thresholds * n_scales);
+  NumericVector res_size(n_thresholds * n_scales);
+  NumericVector res_fss(n_thresholds * n_scales);
+  NumericVector res_a(n_thresholds * n_scales);
+  NumericVector res_b(n_thresholds * n_scales);
+  NumericVector res_c(n_thresholds * n_scales);
+  NumericVector res_d(n_thresholds * n_scales);
+  // NOTE: we calculate several scores together
+  //       it would be redundant to calculate the cumulated matrices twice...
   // TODO:
   // if (ob.nrow() != ni || ob.ncol != nj) ERROR
   //
-  for (i=0 ; i < n_thresholds ; i++) {
-    // calculate cumsum matrices
-    cum_fc = cumsum2d_bin(fcfield, thresholds[i]);
-    cum_ob = cumsum2d_bin(obfield, thresholds[j]);
-    for (j=0 ; j < n_sizes ; j++) {
-      k = i*n_sizes + j;
-      res_thresh(k) = thresholds(i);
-      res_size(k) = window_sizes(j);
+  for (th=0 ; th < n_thresholds ; th++) {
+    // calculate cumsum matrices for given threshold
+    cum_fc = cumsum2d_bin(fcfield, thresholds[th]);
+    cum_ob = cumsum2d_bin(obfield, thresholds[th]);
+    for (sc=0 ; sc < n_scales ; sc++) {
+      k = th*n_scales + sc;
+      res_thresh(k) = thresholds(th);
+      res_size(k) = scales(sc);
       // fraction matrices
-      frac_fc = window_mean_from_cumsum(cum_fc, (int) window_sizes[j]);
-      frac_ob = window_mean_from_cumsum(cum_ob, (int) window_sizes[j]);
- 
-      res_fss(k) = fss_from_fractions(frac_fc, frac_ob) ;
-        //mean( (frac_fc(_,_)-frac_ob(_,_))^2) /
-        //mean(frac_fc^2 + frac_ob^2);
-      // other "fuzzy" scores: ETS, ...
-    }
-  }
+      frac_fc = window_mean_from_cumsum(cum_fc, (int) scales[sc]);
+      frac_ob = window_mean_from_cumsum(cum_ob, (int) scales[sc]);
+      fss1 = fss2 = a = b = c = 0.;
+      for (j=0 ; j < nj ; j++) {
+        for (i=0 ; i < ni ; i++) {
+          // FSS
+          fss1 += (frac_fc(i,j)-frac_ob(i,j))*(frac_fc(i,j)-frac_ob(i,j)) ;
+          fss2 += frac_fc(i,j)*frac_fc(i,j) + frac_ob(i,j)*frac_ob(i,j) ;
 
-  return Rcpp::DataFrame::create(Named("threshold")=res_thresh,
-                                 Named("scale")=res_size,
-                                 Named("value")=res_fss);
+          // Neighborhood Adapted Contingency Table
+          // ref Stein & Stoop 2019
+          // method:
+          // f(ob) = a + b of unadapted contingency tab
+          // f(fc) = a + c of unadapted contingency tab
+          // if the difference (b-c) is neg., min(b,c)=b
+          if ((dd = frac_ob(i,j)-frac_fc(i,j)) < 0) {
+            a += frac_ob(i,j) ;
+            c -= dd ;
+          } else {
+            a += frac_fc(i,j) ;
+            b += dd ;
+          }
+          // TODO: Other scores
+          
+        } //i
+      } //j
+      res_fss[k] = (fss2 < 1.0E-3) ? 0. : 1. - fss1/fss2 ;
+      res_a[k]   = a / (ni*nj) ;
+      res_b[k]   = b / (ni*nj) ;
+      res_c[k]   = c / (ni*nj) ;
+      res_d[k]   = 1. - res_a[k] - res_b[k] - res_c[k] ;
+    } //sc
+  } //th
+
+  return Rcpp::DataFrame::create(Named("threshold") = res_thresh,
+                                 Named("scale")     = res_size,
+                                 Named("fss")       = res_fss,
+                                 Named("a")         = res_a,
+                                 Named("b")         = res_b,
+                                 Named("c")         = res_c,
+                                 Named("d")         = res_d);
 }
   
 

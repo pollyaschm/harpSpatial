@@ -230,16 +230,9 @@ verify_spatial <- function(start_date,
 
   # Define the list of score tables.
   scores <- vector("list", length(score_list))
-  names(scores) <- names(score_list)
-  # some score funtions calculate several scores together
-  # we don't want to call them twice...
-  score_function_list <- unique(sapply(score_list, function(x) x$func))
-  # And conversely, for every such "multiscore", we need the list of scores that depend on it
-  score_function_subset <- sapply(score_function_list, function(msc)
-                                  names(which(sapply(score_list, function(x) x$func == msc))))
+  names(scores) <- score_list
 
 
-  message("score functions: ", paste(score_function_list, collapse=" "))
   # MAIN LOOP
   case <- 1
   for (ob in seq_along(all_ob_dates)) {  # (obdate in all_ob_dates) looses POSIXct class
@@ -343,49 +336,43 @@ verify_spatial <- function(start_date,
       ### NOW WE COMPUTE SCORES ###
       #############################
 
-      # FIXME: Some scores (e.g. SAL) have various other parameters that we can't pass yet...
-      #        While others don't need any
-      for (sf in score_function_list) {
-        # get the required arguments for this function
-        # NOTE: args() only works if the function is found
-        #       so either exported, or only internal use
-#        arglist <- names(as.list(args(sf)))
-        myargs <- list(obfield=obfield, fcfield=fcfield,
-                         thresholds = thresholds,
-                         scales = window_sizes)
-        message("Calling ", sf)
-
-        multiscore <- do.call(sf, myargs)
-
-        if (!is.null(multiscore)) {
-          # nrows per case for this score
-          nrow <- dim(multiscore)[1]
-          # interval of rows for this case in full score table
-          intv <- seq_len(nrow) + (case - 1) * nrow
-          for (sn in score_function_subset[[sf]]) {
-            message("-----> Calling score ", score_list[[sn]])
-            sc <- multiscore[,score_list[[sn]]$fields]
-            if (is.null(scores[[sn]])) {
-              template <- spatial_score_table(spatial_scores(score_list[sn])$fields)
-              tbl_struct <- lapply(template$fields, 
-                                   function(x) switch(x, 
-                                             "CHARACTER" = NA_character_,
-                                             "INTEGER"   = NA_integer_, 
-                                             "REAL"      = NA_real_,
-                                             NA_real_))
-              scores[[sn]] <- do.call(tibble::tibble, c(tbl_struct, .rows = ncases * nrow))
-              # we can already fill some constant columns
-              if ("model" %in% names(scores[[sn]])) scores[[sn]]$model <- det_model
-              if ("prm" %in% names(scores[[sn]]))   scores[[sn]]$prm   <- parameter
-            }
-            # which interval of the score table is to be filled (may be only 1 row -> score[case, ...])
-            # NOTE: save fcdate as unix date, leadtime in seconds !
-            scores[[sn]]$fcdate[intv] <- as.numeric(fcdate)
-            scores[[sn]]$leadtime[intv] <- ldt
-            scores[[sn]][intv, names(sc)] <- sc
-          }
+      for (sn in seq_along(score_list)) {
+        # NOTE: in this loop approach, we should add all possible parameters in every call
+        #       even if a particular score will not use them...
+        # FIXME: Some scores (e.g. SAL) have various other parameters that we can't pass yet...
+        message("-----> Calling score ", score_list[sn])
+        sc <- spatial_scores(score = score_list[sn],
+                             obfield = obfield,
+                             fcfield = fcfield,
+                             thresholds = thresholds,
+                             window_sizes = window_sizes
+                             )
+        nrow <- dim(sc)[1]
+#        message("            dim=", dim(sc)[1])
+        # we use the first case to build the full score table
+        if (is.null(scores[[sn]])) {
+          template <- spatial_score_table(spatial_scores(score_list[sn])$fields)
+          tbl_struct <- lapply(template$fields, 
+                               function(x) switch(x, 
+                                           "CHARACTER" = NA_character_,
+                                           "INTEGER"   = NA_integer_, 
+                                           "REAL"      = NA_real_,
+                                           NA_real_))
+#          print(tbl_struct)
+          scores[[sn]] <- do.call(tibble::tibble, c(tbl_struct, .rows = ncases * nrow))
+          # we can already fill some constant columns
+          if ("model" %in% names(scores[[sn]])) scores[[sn]]$model <- det_model
+          if ("prm" %in% names(scores[[sn]]))   scores[[sn]]$prm   <- parameter
         }
+        # which interval of the score table is to be filled (may be only 1 row -> score[case, ...])
+        intv <- seq_len(nrow) + (case - 1) * nrow
+        # NOTE: save fcdate as unix date, leadtime in seconds !
+        scores[[sn]]$fcdate[intv] <- as.numeric(fcdate)
+        scores[[sn]]$leadtime[intv] <- ldt
+        scores[[sn]][intv, names(sc)] <- sc
+        scores[[sn]]$fcdate[intv] <- as.numeric(fcdate)
       }
+      # TODO: ensemble scores
 
       case <- case + 1
     } # fcdate
