@@ -233,8 +233,8 @@ verify_spatial <- function(start_date,
 #  names(score_templates) <- score_list
 
   # Define the list of score tables.
-  scores <- vector("list", length(score_list))
-  names(scores) <- names(score_list)
+  score_tables <- vector("list", length(score_list))
+  names(score_tables) <- names(score_list)
   # some score funtions calculate several scores together
   # we don't want to call them twice...
   score_function_list <- unique(sapply(score_list, function(x) x$func))
@@ -362,30 +362,31 @@ verify_spatial <- function(start_date,
 
         if (!is.null(multiscore)) {
           # nrows per case for this score
+          message("output dim : ", paste(dim(multiscore), collapse="x"))
           nrow <- dim(multiscore)[1]
           # interval of rows for this case in full score table
           intv <- seq_len(nrow) + (case - 1) * nrow
           for (sn in score_function_subset[[sf]]) {
             message("-----> Calling score ", sn)
             sc <- multiscore[,score_list[[sn]]$fields]
-            if (is.null(scores[[sn]])) {
-              template <- spatial_score_table(spatial_scores(sn)$fields)
+            if (is.null(score_tables[[sn]])) {
+              template <- spatial_score_table(score_list[[sn]])
               tbl_struct <- lapply(template$fields, 
                                    function(x) switch(x, 
                                              "CHARACTER" = NA_character_,
                                              "INTEGER"   = NA_integer_, 
                                              "REAL"      = NA_real_,
                                              NA_real_))
-              scores[[sn]] <- do.call(tibble::tibble, c(tbl_struct, .rows = ncases * nrow))
+              score_tables[[sn]] <- do.call(tibble::tibble, c(tbl_struct, .rows = ncases * nrow))
               # we can already fill some constant columns
-              if ("model" %in% names(scores[[sn]])) scores[[sn]]$model <- model
-              if ("prm" %in% names(scores[[sn]]))   scores[[sn]]$prm   <- parameter
+              if ("model" %in% names(score_tables[[sn]])) score_tables[[sn]]$model <- model
+              if ("prm" %in% names(score_tables[[sn]]))   score_tables[[sn]]$prm   <- parameter
             }
             # which interval of the score table is to be filled (may be only 1 row -> score[case, ...])
             # NOTE: save fcdate as unix date, leadtime in seconds !
-            scores[[sn]]$fcdate[intv] <- as.numeric(fcdate)
-            scores[[sn]]$leadtime[intv] <- ldt
-            scores[[sn]][intv, names(sc)] <- sc
+            score_tables[[sn]]$fcdate[intv] <- as.numeric(fcdate)
+            score_tables[[sn]]$leadtime[intv] <- ldt
+            score_tables[[sn]][intv, names(sc)] <- sc
           }
         }
       }
@@ -400,10 +401,10 @@ verify_spatial <- function(start_date,
 
   ## write to SQLite
   if (!is.null(sqlite_file)) {
-    save_spatial_verif(scores, sqlite_path, sqlite_file)
+    save_spatial_verif(score_tables, sqlite_path, sqlite_file)
   }
 
-  if (return_data) invisible(scores)
+  if (return_data) invisible(score_tables)
   else invisible(NULL)
 }
 
@@ -411,20 +412,20 @@ verify_spatial <- function(start_date,
 #' @param scores A list of spatial score tables
 #' @param sqlite_path The path for the sqlite file
 #' @param sqlite_file The file to which the tables are written or added
-save_spatial_verif <- function(scores, sqlite_path, sqlite_file) {
+save_spatial_verif <- function(score_tables, sqlite_path, sqlite_file) {
   if (is.null(sqlite_path)) db_file <- sqlite_file
   else db_file <- paste(sqlite_path, sqlite_file, sep = "/")
   message("Writing to SQLite file ", db_file)
   db <- harpIO:::dbopen(db_file)
-  for (sc in names(scores)) {
+  for (sc in names(score_tables)) {
     # check for score table and create if necessary
-    tab <- spatial_score_table(spatial_scores(score = sc)$fields)
+    tab <- spatial_score_table(spatial_scores(score = sc))
     # drop empty rows (missing cases)
     harpIO:::create_table(db, sc, tab$fields, tab$primary)
     # TODO: should we drop all cases were any field is missing?
-    ok <- !is.na(scores[[sc]][, "fcdate"])
-    message(sc, ":", dim(scores[[sc]])[1], " rows, ", length(ok), " non-NA.")
-    harpIO:::dbwrite(db, sc, scores[[sc]][ok, ])
+    ok <- !is.na(score_tables[[sc]][, "fcdate"])
+    message(sc, ":", dim(score_tables[[sc]])[1], " rows, ", sum(ok), " non-NA.")
+    harpIO:::dbwrite(db, sc, score_tables[[sc]][ok, ])
   }
 
   harpIO:::dbclose(db)

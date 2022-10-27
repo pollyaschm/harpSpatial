@@ -7,15 +7,17 @@
 #' @export
 spatial_scores <- function(score = NULL, obfield = NULL, fcfield = NULL, ...) {
   # TODO: add score options, plot_func and plot_opt
-  # FIXME: some scores really need to be combined for efficiency
+  # FIXME: you MUST indicate the primary fields (e.g. threshold & scale) !
   score_list <- list(
                      "bias"   = list(fields = c("bias"), "func" = "scores_sp_basic"),
-                     "mse"    = list(fields = c("mse"), "func" = "scores_sp_basic"),
-                     "mae"    = list(fields = c("mae"), "func" = "scores_sp_basic"),
+                     "mse"    = list(fields = c("mse"),  "func" = "scores_sp_basic"),
+                     "mae"    = list(fields = c("mae"),  "func" = "scores_sp_basic"),
 #                     "gridded" = list(fields = c("bias", "mse"), "func" = "score_sp_gridded"),
                      "SAL"     = list(fields = c("S", "A", "L"), "func" = "SAL"),
-                     "FSS"     = list(fields = c("threshold", "scale", "fss"), "func" = "scores_sp_neighborhood"),
-                     "NACT"     = list(fields = c("threshold", "scale", "a", "b", "c", "d"), "func" = "scores_sp_neighborhood")
+                     "FSS"     = list(fields = c("fss"), primary = c("threshold", "scale"),
+                                      "func" = "scores_sp_neighborhood"),
+                     "NACT"    = list(fields = c("a", "b", "c", "d"), primary = c("threshold", "scale"),
+                                      "func" = "scores_sp_neighborhood")
 #                     , "FSS_p"     = list(fields = c("percentile", "scale", "fss"), "func" = "score_fss")
                      )
 
@@ -52,7 +54,7 @@ scores_sp_neighborhood <- function(obfield, fcfield, thresholds, scales, ...) {
   message("obfield dimensions: ", paste(dim(obfield), collapse="x"))
   message("fcfield dimensions: ", paste(dim(fcfield), collapse="x"))
   message("thresholds", paste(thresholds, collapse=","))
-  message("scales", paste(thresholds, scales=","))
+  message("scales", paste(scales, scales=","))
   harpSpatial_neighborhood_scores(obfield=obfield, fcfield=fcfield,
                                   thresholds=thresholds, scales=scales
   )
