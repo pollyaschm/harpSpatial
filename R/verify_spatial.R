@@ -368,7 +368,7 @@ verify_spatial <- function(start_date,
           intv <- seq_len(nrow) + (case - 1) * nrow
           for (sn in score_function_subset[[sf]]) {
             message("-----> Calling score ", sn)
-            sc <- multiscore[,score_list[[sn]]$fields]
+            sc <- multiscore[,c(score_list[[sn]]$primary, score_list[[sn]]$fields)]
             if (is.null(score_tables[[sn]])) {
               template <- spatial_score_table(score_list[[sn]])
               tbl_struct <- lapply(template$fields, 
