@@ -23,14 +23,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // sal_identify_objects
-List sal_identify_objects(NumericMatrix indat, double threshold, NumericVector maxobj);
+List sal_identify_objects(NumericMatrix indat, double threshold, double maxobj);
 RcppExport SEXP _harpSpatial_sal_identify_objects(SEXP indatSEXP, SEXP thresholdSEXP, SEXP maxobjSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericMatrix >::type indat(indatSEXP);
     Rcpp::traits::input_parameter< double >::type threshold(thresholdSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type maxobj(maxobjSEXP);
+    Rcpp::traits::input_parameter< double >::type maxobj(maxobjSEXP);
     rcpp_result_gen = Rcpp::wrap(sal_identify_objects(indat, threshold, maxobj));
     return rcpp_result_gen;
 END_RCPP

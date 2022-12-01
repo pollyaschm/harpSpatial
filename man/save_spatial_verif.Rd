@@ -4,16 +4,16 @@
 \alias{save_spatial_verif}
 \title{Save spatial scores to SQLite}
 \usage{
-save_spatial_verif(scores, sqlite_path, sqlite_file)
+save_spatial_verif(score_tables, sqlite_path, sqlite_file)
 
-save_spatial_verif(scores, sqlite_path, sqlite_file)
+save_spatial_verif(score_tables, sqlite_path, sqlite_file)
 }
 \arguments{
-\item{scores}{A list of spatial score tables}
-
 \item{sqlite_path}{The path for the sqlite file}
 
 \item{sqlite_file}{The file to which the tables are written or added}
+
+\item{scores}{A list of spatial score tables}
 }
 \description{
 Save spatial scores to SQLite

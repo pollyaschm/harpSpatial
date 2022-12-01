@@ -1,4 +1,6 @@
-# Default harpSPatial configuration
+# Default harpSpatial configuration
+###################################
+
 lead_time            = seq(0, 36, 3)
 lt_unit              = "h"
 by                   = "12h"
@@ -23,10 +25,23 @@ verif_domain         = NULL
 use_mask             = FALSE
 
 # SCORE DETAILS: thresholds etc.
+# NOTE: the window_sizes must be n >= 0.
+#  The actual boxes have size 2*n+1
 window_sizes         = c(0, 1, 2, 4, 8, 12, 20)
 thresholds           = c(0.1, 1, 5, 10)
 
 # OUTPUT
 sqlite_path          = NULL
 sqlite_file          = "harp_spatial_scores.sqlite"
+
+# SCORE OPTIONS 
+# TODO: plot options as well?
+sal_options <- list(thresh_scale = 15.,
+                    min_rain = 0.1,
+                    same_threshold = FALSE,
+                    maxobj = 1000
+                    )
+
+
+
 
