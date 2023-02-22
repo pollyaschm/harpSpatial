@@ -174,7 +174,7 @@ verify_spatial <- function(start_date,
     )
     do.call(harpIO::read_grid, 
       c(list(file_name=obfile, file_format=ob_file_format,
-                   parameter = ob_param), ob_options))
+                   parameter = ob_param, file_format_opts = ob_options)))
   }
 
   # FIXME: if (!is.null(members) && length(members) > 1)
@@ -193,8 +193,8 @@ verify_spatial <- function(start_date,
         file_template = fc_file_template)
       do.call(harpIO::read_grid,
         c(list(file_name = fcfile, file_format = fc_file_format, 
-                   parameter = parameter, lead_time = lead_time),
-                       fc_options))
+                   parameter = parameter, lead_time = lead_time,
+                       file_format_opts = fc_options)))
     }
   } else {
     # for EPS models, we try to get the members into a 3D geogrid array.
