@@ -9,16 +9,16 @@ spatial_scores <- function(score = NULL, obfield = NULL, fcfield = NULL, ...) {
   # TODO: add score options, plot_func and plot_opt
   # FIXME: you MUST indicate the primary fields (e.g. threshold & scale) !
   score_list <- list(
-                     "bias"   = list(fields = c("bias"), "func" = "scores_sp_basic"),
-                     "mse"    = list(fields = c("mse"),  "func" = "scores_sp_basic"),
-                     "mae"    = list(fields = c("mae"),  "func" = "scores_sp_basic"),
+                     "bias"   = list(fields = c("bias"), "func" = "scores_sp_basic", "plot_func" = "plot_basic"),
+                     "mse"    = list(fields = c("mse"),  "func" = "scores_sp_basic", "plot_func" = "plot_basic"),
+                     "mae"    = list(fields = c("mae"),  "func" = "scores_sp_basic", "plot_func" = "plot_basic"),
 #                     "gridded" = list(fields = c("bias", "mse"), "func" = "score_sp_gridded"),
-                     "SAL"     = list(fields = c("S", "A", "L"), "func" = "SAL"),
+                     "SAL"     = list(fields = c("S", "A", "L"), "func" = "SAL", "plot_func" = "plot_sal"),
                      "FSS"     = list(fields = c("fss"), primary = c("threshold", "scale"),
-                                      "func" = "scores_sp_neighborhood"),
+                                      "func" = "scores_sp_neighborhood", "plot_func" = "plot_fss"),
                      "NACT"    = list(fields = c("a", "b", "c", "d"), primary = c("threshold", "scale"),
-                                      "func" = "scores_sp_neighborhood")
-#                     , "FSS_p"     = list(fields = c("percentile", "scale", "fss"), "func" = "score_fss")
+                                      "func" = "scores_sp_neighborhood", "plot_func" = "plot_nact")
+#                     , "FSS_p"     = list(fields = c("percentile", "scale", "fss"), "func" = "score_fss", "plot_func" = "plot_fss")
                      )
 
   # if called without "score", return a list of all scores
