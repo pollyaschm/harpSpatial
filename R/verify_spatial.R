@@ -285,7 +285,7 @@ verify_spatial <- function(start_date,
     if (!is.null(ob_interp_method)) {
       if (is.null(init$regrid_ob)) {
         message("Initialising observation regridding.")
-        if (is_null(ob_domain)) {
+        if (is.null(ob_domain)) {
           if (!is.null(ob_options$domain)) {
             ob_domain <- ob_options$domain
           } else {
@@ -346,7 +346,7 @@ verify_spatial <- function(start_date,
       if (!is.null(fc_interp_method)) {
         if (is.null(init$regrid_fc)) {
           message("Initialising fc regridding.")
-          if (is_null(fc_domain)) {
+          if (is.null(fc_domain)) {
             if (!is.null(fc_options$domain)) {
               fc_domain <- fc_options$domain
             } else {
