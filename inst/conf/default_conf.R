@@ -7,16 +7,18 @@ by                   = "12h"
 members              = NULL
 fc_file_path         = ""
 fc_file_template     = ""
-fc_file_format       = "fa"
+fc_file_format       = NULL
 fc_options           = list()
+fc_domain            = NULL
 fc_interp_method     = "closest"
 fc_accumulation      = NULL
 
 # OBS
 ob_file_path         = ""
 ob_file_template     = ""
-ob_file_format       = "hdf5"
+ob_file_format       = NULL
 ob_options           = list()
+ob_domain            = NULL
 ob_interp_method     = "closest"
 ob_accumulation      = "15m"
 
@@ -41,7 +43,5 @@ sal_options <- list(thresh_scale = 15.,
                     same_threshold = FALSE,
                     maxobj = 1000
                     )
-
-
 
 

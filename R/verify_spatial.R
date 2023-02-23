@@ -27,6 +27,8 @@
 #'   will always be file_path/template.
 #' @param fc_file_format The format of the files to read. Can be e.g. "fa" or "grib".
 #' @param fc_options A list with format-specific options for the reader function.
+#' @param fc_domain The forecast domain. If provided, the fc reading can be made faster
+#'    by not extracting domain information (format option meta).
 #' @param fc_interp_method Interpolation method to be used when transforming a forecast
 #'   field to the verification grid.
 #' @param fc_accumulation The accumulation type of the forecast. This is only used for
@@ -47,6 +49,8 @@
 #'   will always be file_path/template.
 #' @param ob_file_format The format of the files to read. Can be e.g. "hdf5" or "grib".
 #' @param ob_options A list with format-specific options for the reader function.
+#' @param ob_domain The observation domain. If provided, the obs reading can be made faster
+#'    by not extracting domain information (format option meta).
 #' @param ob_interp_method Interpolation method to be used when transforming a forecast
 #'   field to the verification grid.
 #' @param ob_accumulation The accumulation type of the observation (or reference). This is only used for
@@ -83,12 +87,14 @@ verify_spatial <- function(start_date,
                            fc_file_template     = harpSpatial_conf$fc_file_template, #"",
                            fc_file_format       = harpSpatial_conf$fc_file_format, #"fa",
                            fc_options           = harpSpatial_conf$fc_options, #list(),
+                           fc_domain            = harpSpatial_conf$fc_domain, #NULL,
                            fc_interp_method     = harpSpatial_conf$fc_interp_method, #"closest",
                            fc_accumulation      = harpSpatial_conf$fc_accumulation, #NULL,
                            ob_file_path         = harpSpatial_conf$ob_file_path, #"",
                            ob_file_template     = harpSpatial_conf$ob_file_template, #"",
                            ob_file_format       = harpSpatial_conf$ob_file_format, #"hdf5",
                            ob_options           = harpSpatial_conf$ob_options, #list(),
+                           ob_domain            = harpSpatial_conf$ob_domain, #NULL,
                            ob_interp_method     = harpSpatial_conf$ob_interp_method, #"closest",
                            ob_accumulation      = harpSpatial_conf$ob_accumulation, #"15m",
                            verif_domain         = harpSpatial_conf$verif_domain, #NULL,
@@ -251,7 +257,7 @@ verify_spatial <- function(start_date,
     message("=====\nobdate: ", format(obdate, "%Y%m%d-%H%M"))
     obfield <- get_ob(obdate)
     if (inherits(obfield, "try-error")) { # e.g. missing observation
-      if (harpenv$verbose) cat("Observation not found. Skipping.\n")
+      if (harpenv$verbose) message("Observation not found. Skipping.\n")
       next
     }
     if (prm$accum > 0) { # an accumulated field like precipitation
@@ -279,8 +285,15 @@ verify_spatial <- function(start_date,
     if (!is.null(ob_interp_method)) {
       if (is.null(init$regrid_ob)) {
         message("Initialising observation regridding.")
+        if (is_null(ob_domain)) {
+          if (!is.null(ob_options$domain)) {
+            ob_domain <- ob_options$domain
+          } else {
+            ob_domain <- obfield
+          }
+        }
         init$regrid_ob <- meteogrid::regrid.init(
-          olddomain = obfield,
+          olddomain = ob_domain,
           newdomain = verif_domain,
           method    = ob_interp_method)
       }
@@ -333,9 +346,16 @@ verify_spatial <- function(start_date,
       if (!is.null(fc_interp_method)) {
         if (is.null(init$regrid_fc)) {
           message("Initialising fc regridding.")
+          if (is_null(fc_domain)) {
+            if (!is.null(fc_options$domain)) {
+              fc_domain <- fc_options$domain
+            } else {
+              fc_domain <- fcfield
+            }
+          }
           init$regrid_fc <- 
             meteogrid::regrid.init(
-              olddomain = fcfield,
+              olddomain = fc_domain,
               newdomain = verif_domain,
               method = fc_interp_method
             )

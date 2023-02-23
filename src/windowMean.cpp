@@ -79,6 +79,29 @@ NumericMatrix window_mean_from_cumsum(NumericMatrix indat, int rad) {
   }
   return result;
 }
+// Version without "zero padding"
+// Points too close to boundary are set to NA
+// [[Rcpp::export]]
+//NumericMatrix window_mean_from_cumsum_nopad(NumericMatrix indat, int wsize) {
+// int i, j, N, ni=indat.nrow(), nj=indat.ncol(), rad=(int) (wsize-1)/2 ;
+//  int imax, jmax;
+// NumericMatrix result(ni, nj);
+//
+// // TODO: maybe quicker if you initialise the result to NA?
+// for (i=0 ; i < ni; i++) {
+//   for(j=0 ; j < nj; j++) {
+//     if (i > rad && i < ni - rad && j > rad && j < nj - rad ) {
+//       result(i, j) = ( indat(i + rad, j + rad)
+//                        - indat(i - rad - 1, j + rad)
+//                        - indat(i + rad, j - rad - 1)
+//                        + indat(i - rad -1, j - rad - 1) ) / (wsize*wsize);
+//     }
+//     else {
+//      result(i,j) = NA_REAL;
+//    }
+//  }
+// }
+// return result;
 
 // a fast windowing call that can be used with spatialVx
 // No longer used
