@@ -1,7 +1,8 @@
 # various spatial verification scores
 #' Calculate spatial scores
-#' @param score The score to calculate
-#' @param obfield A matrix containing the observation field
+#' @param score The score to calculate. If NULL, the function will return a list of available scores.
+#' @param obfield A matrix containing the observation field. If NULL, the function will return
+#'   the table structure for the specified score.
 #' @param fcfield A matrix containing the forecast field. Must have the same dimension as obfield.
 #' @param ... Other options that may depend on the score (like scale, threshold, ...)
 #' @export
@@ -44,12 +45,12 @@ spatial_scores <- function(score = NULL, obfield = NULL, fcfield = NULL, ...) {
 # simple wrappers to deal with unwanted arguments
 # Yes, there are probably nicer ways...
 
-#' @export
+##' @export
 scores_sp_basic <- function(obfield, fcfield, ...) {
   harpSpatial_basic_scores(obfield=obfield, fcfield=fcfield)
 }
 
-#' @export
+##' @export
 scores_sp_neighborhood <- function(obfield, fcfield, thresholds, scales, ...) {
   message("obfield dimensions: ", paste(dim(obfield), collapse="x"))
   message("fcfield dimensions: ", paste(dim(fcfield), collapse="x"))

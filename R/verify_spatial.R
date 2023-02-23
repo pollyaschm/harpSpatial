@@ -26,7 +26,7 @@
 #'   zeros - can be omitted or 2, 3 or 4. Note that the full path to the file
 #'   will always be file_path/template.
 #' @param fc_file_format The format of the files to read. Can be e.g. "fa" or "grib".
-#' @param fc_options A list with format-specific options for the reader function.
+#' @param fc_file_options A list with format-specific options for the reader function.
 #' @param fc_domain The forecast domain. If provided, the fc reading can be made faster
 #'    by not extracting domain information (format option meta).
 #' @param fc_interp_method Interpolation method to be used when transforming a forecast
@@ -48,7 +48,7 @@
 #'   zeros - can be omitted or 2, 3 or 4. Note that the full path to the file
 #'   will always be file_path/template.
 #' @param ob_file_format The format of the files to read. Can be e.g. "hdf5" or "grib".
-#' @param ob_options A list with format-specific options for the reader function.
+#' @param ob_file_options A list with format-specific options for the reader function.
 #' @param ob_domain The observation domain. If provided, the obs reading can be made faster
 #'    by not extracting domain information (format option meta).
 #' @param ob_interp_method Interpolation method to be used when transforming a forecast
@@ -86,14 +86,14 @@ verify_spatial <- function(start_date,
                            fc_file_path         = harpSpatial_conf$fc_file_path, # "",
                            fc_file_template     = harpSpatial_conf$fc_file_template, #"",
                            fc_file_format       = harpSpatial_conf$fc_file_format, #"fa",
-                           fc_options           = harpSpatial_conf$fc_options, #list(),
+                           fc_file_options      = harpSpatial_conf$fc_file_options, #list(),
                            fc_domain            = harpSpatial_conf$fc_domain, #NULL,
                            fc_interp_method     = harpSpatial_conf$fc_interp_method, #"closest",
                            fc_accumulation      = harpSpatial_conf$fc_accumulation, #NULL,
                            ob_file_path         = harpSpatial_conf$ob_file_path, #"",
                            ob_file_template     = harpSpatial_conf$ob_file_template, #"",
                            ob_file_format       = harpSpatial_conf$ob_file_format, #"hdf5",
-                           ob_options           = harpSpatial_conf$ob_options, #list(),
+                           ob_file_options      = harpSpatial_conf$ob_file_options, #list(),
                            ob_domain            = harpSpatial_conf$ob_domain, #NULL,
                            ob_interp_method     = harpSpatial_conf$ob_interp_method, #"closest",
                            ob_accumulation      = harpSpatial_conf$ob_accumulation, #"15m",
@@ -103,7 +103,7 @@ verify_spatial <- function(start_date,
                            thresholds           = harpSpatial_conf$thresholds, #c(0.1, 1, 5, 10),
                            sqlite_path          = harpSpatial_conf$sqlite_path, #NULL,
                            sqlite_file          = harpSpatial_conf$sqlite_file, #"harp_spatial_scores.sqlite",
-                           return_data          = TRUE) {
+                           return_data          = FALSE) {
 
   # TODO: we may need more options! masked interpolation, options by score, 
   prm <- harpIO::parse_harp_parameter(parameter)
@@ -180,7 +180,7 @@ verify_spatial <- function(start_date,
     )
     do.call(harpIO::read_grid, 
       c(list(file_name=obfile, file_format=ob_file_format,
-                   parameter = ob_param, file_format_opts = ob_options)))
+                   parameter = ob_param, file_format_opts = ob_file_options)))
   }
 
   # FIXME: if (!is.null(members) && length(members) > 1)
@@ -200,7 +200,7 @@ verify_spatial <- function(start_date,
       do.call(harpIO::read_grid,
         c(list(file_name = fcfile, file_format = fc_file_format, 
                    parameter = parameter, lead_time = lead_time,
-                       file_format_opts = fc_options)))
+                       file_format_opts = fc_file_options)))
     }
   } else {
     # for EPS models, we try to get the members into a 3D geogrid array.
@@ -218,11 +218,11 @@ verify_spatial <- function(start_date,
         do.call(harpIO::read_grid,
                 c(list(file_name = fcfile, file_format = fc_file_format, 
                   parameter = parameter, lead_time = lead_time),
-                  fc_options))
+                  fc_file_options))
       } else {
         lapply(fcfile, harpIO::read_grid, file_format = fc_file_format, 
                 parameter = parameter, lead_time = lead_time, members=members,
-                unlist(fc_options))
+                unlist(fc_file_options))
       }
     }
   }
@@ -286,8 +286,8 @@ verify_spatial <- function(start_date,
       if (is.null(init$regrid_ob)) {
         message("Initialising observation regridding.")
         if (is.null(ob_domain)) {
-          if (!is.null(ob_options$domain)) {
-            ob_domain <- ob_options$domain
+          if (!is.null(ob_file_options$domain)) {
+            ob_domain <- ob_file_options$domain
           } else {
             ob_domain <- obfield
           }
@@ -347,8 +347,8 @@ verify_spatial <- function(start_date,
         if (is.null(init$regrid_fc)) {
           message("Initialising fc regridding.")
           if (is.null(fc_domain)) {
-            if (!is.null(fc_options$domain)) {
-              fc_domain <- fc_options$domain
+            if (!is.null(fc_file_options$domain)) {
+              fc_domain <- fc_file_options$domain
             } else {
               fc_domain <- fcfield
             }

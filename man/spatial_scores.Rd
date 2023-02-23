@@ -7,9 +7,10 @@
 spatial_scores(score = NULL, obfield = NULL, fcfield = NULL, ...)
 }
 \arguments{
-\item{score}{The score to calculate}
+\item{score}{The score to calculate. If NULL, the function will return a list of available scores.}
 
-\item{obfield}{A matrix containing the observation field}
+\item{obfield}{A matrix containing the observation field. If NULL, the function will return
+the table structure for the specified score.}
 
 \item{fcfield}{A matrix containing the forecast field. Must have the same dimension as obfield.}
 
