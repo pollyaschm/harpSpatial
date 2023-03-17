@@ -131,11 +131,11 @@ nbhd_verify.harp_ens_grid_df <- function(
     .fcst, obs, threshold, radius, num_cores = 1, ...
 ) {
   Reduce(
-    dplyr::inner_join,
+    function(x, y) suppressMessages(dplyr::inner_join(x, y)),
     list(
       ens_fss(.fcst, {{obs}}, threshold, radius),
       ens_efss(.fcst, {{obs}}, threshold, radius, num_cores),
-      ens_efss(.fcst, threshold, radius, num_cores)
+      ens_dfss(.fcst, threshold, radius, num_cores)
     )
   )
 }
@@ -218,8 +218,8 @@ ens_efss <- function(x, y, threshold, radius, num_cores = 1) {
 
 #' @export
 ens_efss.geolist <- function(x, y, threshold, radius, num_cores = 1) {
-  if (!meteogrid::is.geofield(y)) browser()
-  (
+  stopifnot(meteogrid::is.geofield(y))
+  stopifnot(
     meteogrid::compare.geodomain(
       attr(x[[1]], "domain"),
       meteogrid::as.geodomain(y)
