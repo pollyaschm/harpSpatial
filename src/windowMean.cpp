@@ -70,7 +70,7 @@ NumericMatrix window_mean_from_cumsum(NumericMatrix indat, int rad) {
       result(i, j) = indat(imax, jmax) ;
       if (i > rad) {
         result(i,j) -= indat(i-rad-1, jmax);
-        if (j > rad) 
+        if (j > rad)
           result(i,j) += indat(i-rad-1, j-rad-1) - indat(imax, j-rad-1);
       }
       else if (j > rad) result(i,j) -= indat(imax, j-rad-1);
@@ -120,8 +120,8 @@ double fss_from_fractions(NumericMatrix m1, NumericMatrix m2) {
   int i, j;
   double fss1=0., fss2=0.;
 
-  for (i=0 ; i < ni ; i++) {  
-    for (j=0 ; j < nj ; j++) {  
+  for (i=0 ; i < ni ; i++) {
+    for (j=0 ; j < nj ; j++) {
       fss1 += (m1(i,j)-m2(i,j))*(m1(i,j)-m2(i,j)) ;
       fss2 += m1(i,j)*m1(i,j) + m2(i,j)*m2(i,j) ;
     }
@@ -147,6 +147,8 @@ DataFrame harpSpatial_neighborhood_scores(NumericMatrix obfield, NumericMatrix f
   NumericVector res_thresh(n_thresholds * n_scales);
   NumericVector res_size(n_thresholds * n_scales);
   NumericVector res_fss(n_thresholds * n_scales);
+  NumericVector res_fbs(n_thresholds * n_scales);
+  NumericVector res_fbs_ref(n_thresholds * n_scales);
   NumericVector res_a(n_thresholds * n_scales);
   NumericVector res_b(n_thresholds * n_scales);
   NumericVector res_c(n_thresholds * n_scales);
@@ -158,8 +160,15 @@ DataFrame harpSpatial_neighborhood_scores(NumericMatrix obfield, NumericMatrix f
   //
   for (th=0 ; th < n_thresholds ; th++) {
     // calculate cumsum matrices for given threshold
-    cum_fc = cumsum2d_bin(fcfield, thresholds[th]);
-    cum_ob = cumsum2d_bin(obfield, thresholds[th]);
+    // Note for ens_fss, the probability needs to be computed a priori so
+    // allow for no computation of binary probabilities
+    if (NumericVector::is_na(thresholds[th])) {
+      cum_fc = fcfield;
+      cum_ob = obfield;
+    } else {
+      cum_fc = cumsum2d_bin(fcfield, thresholds[th]);
+      cum_ob = cumsum2d_bin(obfield, thresholds[th]);
+    }
     for (sc=0 ; sc < n_scales ; sc++) {
       k = th*n_scales + sc;
       res_thresh(k) = thresholds(th);
@@ -188,24 +197,28 @@ DataFrame harpSpatial_neighborhood_scores(NumericMatrix obfield, NumericMatrix f
             b += dd ;
           }
           // TODO: Other scores
-          
+
         } //i
       } //j
-      res_fss[k] = (fss2 < 1.0E-3) ? 0. : 1. - fss1/fss2 ;
-      res_a[k]   = a / (ni*nj) ;
-      res_b[k]   = b / (ni*nj) ;
-      res_c[k]   = c / (ni*nj) ;
-      res_d[k]   = 1. - res_a[k] - res_b[k] - res_c[k] ;
+      res_fbs[k]     = fss1;
+      res_fbs_ref[k] = fss2;
+      res_fss[k]     = (fss2 < 1.0E-3) ? 0. : 1. - fss1/fss2 ;
+      res_a[k]       = a / (ni*nj) ;
+      res_b[k]       = b / (ni*nj) ;
+      res_c[k]       = c / (ni*nj) ;
+      res_d[k]       = 1. - res_a[k] - res_b[k] - res_c[k] ;
     } //sc
   } //th
 
   return Rcpp::DataFrame::create(Named("threshold") = res_thresh,
                                  Named("scale")     = res_size,
+                                 Named("fbs")       = res_fbs,
+                                 Named("fbs_ref")   = res_fbs_ref,
                                  Named("fss")       = res_fss,
-                                 Named("a")         = res_a,
-                                 Named("b")         = res_b,
-                                 Named("c")         = res_c,
-                                 Named("d")         = res_d);
+                                 Named("hit")       = res_a,
+                                 Named("fa")        = res_b,
+                                 Named("miss")      = res_c,
+                                 Named("cr")        = res_d);
 }
-  
+
 
