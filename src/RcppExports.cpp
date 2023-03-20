@@ -108,6 +108,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_ens_fss
+DataFrame cpp_ens_fss(List geolistFcst, NumericMatrix geofieldObs, NumericVector threshold, NumericVector scales);
+RcppExport SEXP _harpSpatial_cpp_ens_fss(SEXP geolistFcstSEXP, SEXP geofieldObsSEXP, SEXP thresholdSEXP, SEXP scalesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< List >::type geolistFcst(geolistFcstSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type geofieldObs(geofieldObsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type threshold(thresholdSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type scales(scalesSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_ens_fss(geolistFcst, geofieldObs, threshold, scales));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_harpSpatial_harpSpatial_basic_scores", (DL_FUNC) &_harpSpatial_harpSpatial_basic_scores, 2},
@@ -118,6 +132,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_harpSpatial_windowMean", (DL_FUNC) &_harpSpatial_windowMean, 2},
     {"_harpSpatial_fss_from_fractions", (DL_FUNC) &_harpSpatial_fss_from_fractions, 2},
     {"_harpSpatial_harpSpatial_neighborhood_scores", (DL_FUNC) &_harpSpatial_harpSpatial_neighborhood_scores, 4},
+    {"_harpSpatial_cpp_ens_fss", (DL_FUNC) &_harpSpatial_cpp_ens_fss, 4},
     {NULL, NULL, 0}
 };
 

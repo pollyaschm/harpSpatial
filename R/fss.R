@@ -82,12 +82,17 @@ fss_old <- function(obfield,
   result
 }
 
-#' Title
+#' Neighbourhood verification for ensembles
 #'
-#' @param .data
-#' @param obs_col
-#' @param threshold
-#' @param radius
+#' @param .data A \code{"harp_ens_grid_df"} data frame or a \code{geolist}.
+#' @param obs_col The name of the observations column in the
+#'   \code{"harp_ens_grid_df"}, or if \code{.data} is a \code{geolist}, a
+#'   \code{geofield}.
+#' @param threshold A numeric vector of thresholds to for which to compute the
+#'   neighbourhood scores. Can also be a character vector with numeric values
+#'   between 0 and 1 preceded by a "q" to denote quantile thresholds.
+#' @param radius The radius, in pixels of the neighbourhoods for which to
+#'   compute the scores.
 #' @param ...
 #'
 #' @return
@@ -100,9 +105,32 @@ nbhd_verify <- function(.fcst, obs, threshold, radius, ...) {
 
 #' @export
 nbhd_verify.geofield <- function(.fcst, obs, threshold, radius, ...) {
-  harpSpatial_neighborhood_scores(
+
+  quantile_thresh <- FALSE
+  thresholds <- harpCore::parse_thresholds(threshold)
+  if (thresholds[["quantiles"]]) {
+    quantile_thresh <- TRUE
+    threshold <- quantile(obs, thresholds[["thresholds"]])
+    thresholds_df <- tibble::tibble(
+      quantile  = thresholds[["thresholds"]],
+      threshold = threshold
+    )
+  }
+
+  result <- harpSpatial_neighborhood_scores(
     obs, .fcst, threshold, radius
   )
+
+  if (quantile_thresh) {
+    result <- dplyr::relocate(
+      suppressMessages(dplyr::inner_join(result, thresholds_df)),
+      dplyr::all_of("quantile"),
+      .before = "threshold"
+    )
+  }
+
+  result
+
 }
 
 #' @export
@@ -110,32 +138,46 @@ nbhd_verify.harp_det_grid_df <- function(
     .fcst, obs, threshold, radius, ...
 ) {
 
-  dplyr::rowwise(.fcst) %>%
-    dplyr::mutate(
-      nbhd_scores = list(
+  dplyr::mutate(
+    dplyr::rowwise(.fcst),
+    dplyr::across(
+      {{obs}},
+      ~list(
         nbhd_verify(
-          {{obs}},
           .data[["fcst"]],
+          .x,
           threshold,
           radius
         )
-      )
-    ) %>%
+      ),
+      .names = "nbhd_scores"
+    )
+  ) %>%
     dplyr::ungroup() %>%
-    dplyr::select(-dplyr::all_of("fcst"), -{{obs}}) %>%
+    dplyr::select(-dplyr::all_of(c("fcst")), -{{obs}}) %>%
     tidyr::unnest(dplyr::all_of("nbhd_scores"))
+
 }
 
 #' @export
 nbhd_verify.harp_ens_grid_df <- function(
     .fcst, obs, threshold, radius, num_cores = 1, ...
 ) {
-  Reduce(
-    function(x, y) suppressMessages(dplyr::inner_join(x, y)),
-    list(
-      ens_fss(.fcst, {{obs}}, threshold, radius),
-      ens_efss(.fcst, {{obs}}, threshold, radius, num_cores),
-      ens_dfss(.fcst, threshold, radius, num_cores)
+  result <- dplyr::bind_rows(
+    ens_fss(.fcst, {{obs}}, threshold, radius),
+    ens_efss(.fcst, {{obs}}, threshold, radius, num_cores)
+  )
+
+  dplyr::bind_rows(
+    result,
+    dplyr::inner_join(
+      ens_dfss(
+        .fcst, harpCore::unique_col(result, "threshold"), radius, num_cores
+      ),
+      dplyr::distinct(
+        result,
+        dplyr::across(intersect(c("quantile", "threshold"), colnames(result)))
+      )
     )
   )
 }
@@ -188,7 +230,7 @@ ens_dfss.geolist <- function(x, threshold, radius, num_cores = 1) {
   }
 
   summarise_fss(
-    result, prefix = "ens_d", dx = attr(x[[1]], "domain")[["dx"]]
+    result, type = "dispersion", dx = attr(x[[1]], "domain")[["dx"]]
   )
 
 }
@@ -225,6 +267,18 @@ ens_efss.geolist <- function(x, y, threshold, radius, num_cores = 1) {
       meteogrid::as.geodomain(y)
     )
   )
+
+  quantile_thresh <- FALSE
+  thresholds <- harpCore::parse_thresholds(threshold)
+  if (thresholds[["quantiles"]]) {
+    quantile_thresh <- TRUE
+    threshold <- quantile(y, thresholds[["thresholds"]])
+    thresholds_df <- tibble::tibble(
+      quantile  = thresholds[["thresholds"]],
+      threshold = threshold
+    )
+  }
+
   if (num_cores > 1) {
 
     num_cores <- min(num_cores, parallel::detectCores(), length(x))
@@ -243,8 +297,16 @@ ens_efss.geolist <- function(x, y, threshold, radius, num_cores = 1) {
 
   }
 
+  if (quantile_thresh) {
+    result <- dplyr::relocate(
+      suppressMessages(dplyr::inner_join(result, thresholds_df)),
+      dplyr::all_of("quantile"),
+      .before = "threshold"
+    )
+  }
+
   summarise_fss(
-    result, prefix = "ens_e", dx = attr(x[[1]], "domain")[["dx"]]
+    result, type = "error", dx = attr(x[[1]], "domain")[["dx"]]
   )
 
 }
@@ -253,14 +315,18 @@ ens_efss.geolist <- function(x, y, threshold, radius, num_cores = 1) {
 ens_efss.harp_ens_grid_df <- function(x, y, threshold, radius, num_cores = 1) {
   dplyr::mutate(
     dplyr::rowwise(x),
-    efss = list(
-      ens_efss(
-        as_geolist(as.list(dplyr::pick(dplyr::matches("_mbr[[:digit:]]+")))),
-        {{y}},
-        threshold,
-        radius,
-        num_cores
-      )
+    dplyr::across(
+      {{y}},
+      ~list(
+        ens_efss(
+          as_geolist(as.list(dplyr::pick(dplyr::matches("_mbr[[:digit:]]+")))),
+          .x,
+          threshold,
+          radius,
+          num_cores
+        )
+      ),
+      .names = "efss"
     )
   ) %>%
     dplyr::ungroup() %>%
@@ -283,43 +349,62 @@ ens_fss.geolist <- function(x, y, threshold, radius) {
     )
   )
 
-  result <- nbhd_verify(
-    mean(cumsum_2d(x, threshold)),
-    cumsum_2d({{y}}, threshold),
-    NA,
-    radius
+  quantile_thresh <- FALSE
+  thresholds <- harpCore::parse_thresholds(threshold)
+  if (thresholds[["quantiles"]]) {
+    quantile_thresh <- TRUE
+    threshold <- quantile(y, thresholds[["thresholds"]])
+    thresholds_df <- tibble::tibble(
+      quantile  = thresholds[["thresholds"]],
+      threshold = threshold
+    )
+  }
+
+  result <- dplyr::bind_rows(
+    lapply(
+      threshold,
+      function(thresh) {
+        dplyr::mutate(
+          cpp_ens_fss(x, y, thresh, radius),
+          threshold = thresh
+        )
+      }
+    )
   )
+  if (quantile_thresh) {
+    result <- dplyr::relocate(
+      suppressMessages(dplyr::inner_join(result, thresholds_df)),
+      dplyr::all_of("quantile"),
+      .before = "threshold"
+    )
+  }
 
   summarise_fss(
-    result, prefix = "ens_", dx = attr(x[[1]], "domain")[["dx"]]
+    result, type = "ensemble", dx = attr(x[[1]], "domain")[["dx"]]
   )
 
 }
 
 #' @export
 ens_fss.harp_ens_grid_df <- function(x, y, threshold, radius) {
-  lapply(
-    threshold,
-    function(th, y) {
-      dplyr::mutate(
-        dplyr::rowwise(x),
-        fss = list(
-          ens_fss(
-            as_geolist(as.list(dplyr::pick(dplyr::matches("_mbr[[:digit:]]+")))),
-            {{y}},
-            th,
-            radius
-          )
+  dplyr::mutate(
+    dplyr::rowwise(x),
+    dplyr::across(
+      {{y}},
+      ~list(
+        ens_fss(
+          as_geolist(as.list(dplyr::pick(dplyr::matches("_mbr[[:digit:]]+")))),
+          .x,
+          threshold,
+          radius
         )
-      ) %>%
-        dplyr::ungroup() %>%
-        dplyr::select(-dplyr::where(is_geolist)) %>%
-        tidyr::unnest(dplyr::all_of("fss")) %>%
-        dplyr::mutate(threshold = th)
-    },
-    {{y}}
+      ),
+      .names = "fss"
+    )
   ) %>%
-    dplyr::bind_rows()
+    dplyr::ungroup() %>%
+    dplyr::select(-dplyr::where(is_geolist)) %>%
+    tidyr::unnest(dplyr::all_of("fss"))
 }
 
 unique_pairs <- function(x) {
@@ -333,27 +418,27 @@ unique_pairs <- function(x) {
   do.call(rbind, lapply(seq_along(x), g))
 }
 
-summarise_fss <- function(result, prefix, dx) {
+summarise_fss <- function(result, type, dx) {
+  by = intersect(c("quantile", "threshold", "scale"), colnames(result))
   dplyr::summarise(
     result,
     fbs     = sum(.data[["fbs"]]),
     fbs_ref = sum(.data[["fbs_ref"]]),
     fss     = mean(.data[["fss"]]),
     count   = dplyr::n(),
-    .by     = c("threshold", "scale")
+    .by     = by
   ) %>%
     dplyr::mutate(
       grid_length = dx,
-      nbhd_length = (.data[["scale"]] * 2 + 1) * dx
+      nbhd_length = (.data[["scale"]] * 2 + 1) * dx,
+      type        = type
     ) %>%
     dplyr::rename(
       nbhd_radius = dplyr::all_of("scale")
     ) %>%
-    dplyr::rename_with(
-      ~paste0(prefix, .x), dplyr::all_of(c("fbs", "fbs_ref", "fss", "count"))
-    ) %>%
     dplyr::relocate(
-      dplyr::all_of(c("grid_length", "nbhd_length")), .after = "nbhd_radius"
+      dplyr::all_of(c("grid_length", "nbhd_length", "type")),
+      .after = "nbhd_radius"
     ) %>%
     tibble::as_tibble()
 }

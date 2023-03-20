@@ -221,4 +221,34 @@ DataFrame harpSpatial_neighborhood_scores(NumericMatrix obfield, NumericMatrix f
                                  Named("cr")        = res_d);
 }
 
+// [[Rcpp::export]]
+DataFrame cpp_ens_fss(
+    List geolistFcst, NumericMatrix geofieldObs,
+    NumericVector threshold, NumericVector scales
+) {
+  int i, j, k;
+  int nk = geolistFcst.size();
+  NumericMatrix tmp = geolistFcst[0];
+  int ni = tmp.nrow();
+  int nj = tmp.ncol();
+  NumericMatrix result(ni, nj);
+  for (k = 0; k < nk; k++) {
+    NumericMatrix geofieldInList = geolistFcst[k];
+    NumericMatrix geofieldCumSum = cumsum2d_bin(geofieldInList, threshold[0]);
+    for (j = 0; j < nj; j++) {
+      for (i = 0; i < ni; i++) {
+        result(i, j) += geofieldCumSum(i, j);
+      }
+    }
+  }
 
+  for (j = 0; j < nj; j++) {
+    for (i = 0; i < ni; i++) {
+      result(i, j) = result(i, j) / nk;
+    }
+  }
+  geofieldObs = cumsum2d_bin(geofieldObs, threshold[0]);
+  NumericVector tmpThresh(1);
+  tmpThresh[0] = NA_REAL;
+  return harpSpatial_neighborhood_scores(geofieldObs, result, tmpThresh, scales);
+}

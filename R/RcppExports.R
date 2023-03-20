@@ -34,3 +34,7 @@ harpSpatial_neighborhood_scores <- function(obfield, fcfield, thresholds, scales
     .Call('_harpSpatial_harpSpatial_neighborhood_scores', PACKAGE = 'harpSpatial', obfield, fcfield, thresholds, scales)
 }
 
+cpp_ens_fss <- function(geolistFcst, geofieldObs, threshold, scales) {
+    .Call('_harpSpatial_cpp_ens_fss', PACKAGE = 'harpSpatial', geolistFcst, geofieldObs, threshold, scales)
+}
+
