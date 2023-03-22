@@ -99,12 +99,18 @@ fss_old <- function(obfield,
 #' @export
 #'
 #' @examples
-nbhd_verify <- function(.fcst, obs, threshold, radius, ...) {
+nbhd_verify <- function(
+  .fcst, obs, threshold, radius, comparator = "ge",
+  include_low = TRUE, include_high = TRUE, ...
+) {
   UseMethod("nbhd_verify")
 }
 
 #' @export
-nbhd_verify.geofield <- function(.fcst, obs, threshold, radius, ...) {
+nbhd_verify.geofield <- function(
+  .fcst, obs, threshold, radius, comparator = "ge",
+  include_low = TRUE, include_high = TRUE, ...
+) {
 
   quantile_thresh <- FALSE
   thresholds <- harpCore::parse_thresholds(threshold)
@@ -117,8 +123,8 @@ nbhd_verify.geofield <- function(.fcst, obs, threshold, radius, ...) {
     )
   }
 
-  result <- harpSpatial_neighborhood_scores(
-    obs, .fcst, threshold, radius
+  result <- cpp_neighborhood_scores(
+    .fcst, obs, threshold, radius, comparator, include_low, include_high
   )
 
   if (quantile_thresh) {
@@ -135,7 +141,8 @@ nbhd_verify.geofield <- function(.fcst, obs, threshold, radius, ...) {
 
 #' @export
 nbhd_verify.harp_det_grid_df <- function(
-    .fcst, obs, threshold, radius, ...
+  .fcst, obs, threshold, radius, comparator = "ge",
+  include_low = TRUE, include_high = TRUE, ...
 ) {
 
   dplyr::mutate(
@@ -147,7 +154,10 @@ nbhd_verify.harp_det_grid_df <- function(
           .data[["fcst"]],
           .x,
           threshold,
-          radius
+          radius,
+          comparator,
+          include_low,
+          include_high
         )
       ),
       .names = "nbhd_scores"
@@ -161,18 +171,26 @@ nbhd_verify.harp_det_grid_df <- function(
 
 #' @export
 nbhd_verify.harp_ens_grid_df <- function(
-    .fcst, obs, threshold, radius, num_cores = 1, ...
+    .fcst, obs, threshold, radius, comparator = "ge",
+  include_low = TRUE, include_high = TRUE, num_cores = 1, ...
 ) {
   result <- dplyr::bind_rows(
-    ens_fss(.fcst, {{obs}}, threshold, radius),
-    ens_efss(.fcst, {{obs}}, threshold, radius, num_cores)
+    ens_fss(
+      .fcst, {{obs}}, threshold, radius,
+      comparator, include_low, include_high
+    ),
+    ens_efss(
+      .fcst, {{obs}}, threshold, radius,
+      comparator, include_low, include_high, num_cores
+    )
   )
 
   dplyr::bind_rows(
     result,
     dplyr::inner_join(
       ens_dfss(
-        .fcst, harpCore::unique_col(result, "threshold"), radius, num_cores
+        .fcst, harpCore::unique_col(result, "threshold"), radius,
+        comparator, include_low, include_high, num_cores
       ),
       dplyr::distinct(
         result,
@@ -194,12 +212,18 @@ nbhd_verify.harp_ens_grid_df <- function(
 #' @export
 #'
 #' @examples
-ens_dfss <- function(x, threshold, radius, num_cores = 1) {
+ens_dfss <- function(
+  x, threshold, radius, comparator = "ge",
+  include_low = TRUE, include_high = TRUE, num_cores = 1
+) {
   UseMethod("ens_dfss")
 }
 
 #' @export
-ens_dfss.geolist <- function(x, threshold, radius, num_cores = 1) {
+ens_dfss.geolist <- function(
+  x, threshold, radius, comparator = "ge",
+  include_low = TRUE, include_high = TRUE, num_cores = 1
+) {
   member_pairs <- unique_pairs(seq_along(x))
   if (num_cores > 1) {
 
@@ -209,7 +233,7 @@ ens_dfss.geolist <- function(x, threshold, radius, num_cores = 1) {
         1:nrow(member_pairs),
         function(i) nbhd_verify(
           x[[member_pairs[i, 1]]], x[[member_pairs[i, 2]]],
-          threshold, radius
+          threshold, radius, comparator, include_low, include_high
         ),
         mc.cores = num_cores
       )
@@ -222,7 +246,7 @@ ens_dfss.geolist <- function(x, threshold, radius, num_cores = 1) {
         1:nrow(member_pairs),
         function(i) nbhd_verify(
           x[[member_pairs[i, 1]]], x[[member_pairs[i, 2]]],
-          threshold, radius
+          threshold, radius, comparator, include_low, include_high
         )
       )
     )
@@ -236,7 +260,10 @@ ens_dfss.geolist <- function(x, threshold, radius, num_cores = 1) {
 }
 
 #' @export
-ens_dfss.harp_ens_grid_df <- function(x, threshold, radius, num_cores = 1) {
+ens_dfss.harp_ens_grid_df <- function(
+  x, threshold, radius, comparator = "ge",
+  include_low = TRUE, include_high = TRUE, num_cores = 1
+) {
   dplyr::mutate(
     dplyr::rowwise(x),
     dfss = list(
@@ -244,6 +271,9 @@ ens_dfss.harp_ens_grid_df <- function(x, threshold, radius, num_cores = 1) {
         as_geolist(as.list(dplyr::pick(dplyr::matches("_mbr[[:digit:]]+")))),
         threshold,
         radius,
+        comparator,
+        include_low,
+        include_high,
         num_cores
       )
     )
@@ -254,12 +284,18 @@ ens_dfss.harp_ens_grid_df <- function(x, threshold, radius, num_cores = 1) {
 }
 
 #' @export
-ens_efss <- function(x, y, threshold, radius, num_cores = 1) {
+ens_efss <- function(
+  x, y, threshold, radius, comparator = "ge",
+  include_low = TRUE, include_high = TRUE, num_cores = 1
+) {
   UseMethod("ens_efss")
 }
 
 #' @export
-ens_efss.geolist <- function(x, y, threshold, radius, num_cores = 1) {
+ens_efss.geolist <- function(
+  x, y, threshold, radius, comparator = "ge",
+  include_low = TRUE, include_high = TRUE, num_cores = 1
+) {
   stopifnot(meteogrid::is.geofield(y))
   stopifnot(
     meteogrid::compare.geodomain(
@@ -285,6 +321,7 @@ ens_efss.geolist <- function(x, y, threshold, radius, num_cores = 1) {
     result <- dplyr::bind_rows(
       parallel::mclapply(
         x, nbhd_verify, y, threshold, radius,
+        comparator, include_low, include_high,
         mc.cores = num_cores
       )
     )
@@ -292,7 +329,10 @@ ens_efss.geolist <- function(x, y, threshold, radius, num_cores = 1) {
   } else {
 
     result <- dplyr::bind_rows(
-      lapply(x, nbhd_verify, y, threshold, radius)
+      lapply(
+        x, nbhd_verify, y, threshold, radius,
+        comparator, include_low, include_high
+      )
     )
 
   }
@@ -312,7 +352,10 @@ ens_efss.geolist <- function(x, y, threshold, radius, num_cores = 1) {
 }
 
 #' @export
-ens_efss.harp_ens_grid_df <- function(x, y, threshold, radius, num_cores = 1) {
+ens_efss.harp_ens_grid_df <- function(
+  x, y, threshold, radius, comparator = "ge",
+  include_low = TRUE, include_high = TRUE, num_cores = 1
+) {
   dplyr::mutate(
     dplyr::rowwise(x),
     dplyr::across(
@@ -323,6 +366,9 @@ ens_efss.harp_ens_grid_df <- function(x, y, threshold, radius, num_cores = 1) {
           .x,
           threshold,
           radius,
+          comparator,
+          include_low,
+          include_high,
           num_cores
         )
       ),
@@ -335,12 +381,18 @@ ens_efss.harp_ens_grid_df <- function(x, y, threshold, radius, num_cores = 1) {
 }
 
 #' @export
-ens_fss <- function(x, y, threshold, radius) {
+ens_fss <- function(
+  x, y, threshold, radius, comparator = "ge",
+  include_low = TRUE, include_high = TRUE, ...
+) {
   UseMethod("ens_fss")
 }
 
 #' @export
-ens_fss.geolist <- function(x, y, threshold, radius) {
+ens_fss.geolist <- function(
+  x, y, threshold, radius, comparator = "ge",
+  include_low = TRUE, include_high = TRUE, ...
+) {
   stopifnot(meteogrid::is.geofield(y))
   stopifnot(
     meteogrid::compare.geodomain(
@@ -365,7 +417,10 @@ ens_fss.geolist <- function(x, y, threshold, radius) {
       threshold,
       function(thresh) {
         dplyr::mutate(
-          cpp_ens_fss(x, y, thresh, radius),
+          cpp_ens_fss(
+            x, y, thresh, radius,
+            comparator, include_low, include_high
+          ),
           threshold = thresh
         )
       }
@@ -386,7 +441,10 @@ ens_fss.geolist <- function(x, y, threshold, radius) {
 }
 
 #' @export
-ens_fss.harp_ens_grid_df <- function(x, y, threshold, radius) {
+ens_fss.harp_ens_grid_df <- function(
+  x, y, threshold, radius, comparator = "ge",
+  include_low = TRUE, include_high = TRUE, ...
+) {
   dplyr::mutate(
     dplyr::rowwise(x),
     dplyr::across(
@@ -396,7 +454,10 @@ ens_fss.harp_ens_grid_df <- function(x, y, threshold, radius) {
           as_geolist(as.list(dplyr::pick(dplyr::matches("_mbr[[:digit:]]+")))),
           .x,
           threshold,
-          radius
+          radius,
+          comparator,
+          include_low,
+          include_high
         )
       ),
       .names = "fss"

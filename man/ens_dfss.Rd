@@ -4,7 +4,15 @@
 \alias{ens_dfss}
 \title{Title}
 \usage{
-ens_dfss(x, threshold, radius, num_cores = 1)
+ens_dfss(
+  x,
+  threshold,
+  radius,
+  comparator = "ge",
+  include_low = TRUE,
+  include_high = TRUE,
+  num_cores = 1
+)
 }
 \arguments{
 \item{num_cores}{}

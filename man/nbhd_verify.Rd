@@ -2,13 +2,35 @@
 % Please edit documentation in R/fss.R
 \name{nbhd_verify}
 \alias{nbhd_verify}
-\title{Title}
+\title{Neighbourhood verification for ensembles}
 \usage{
-nbhd_verify(.fcst, obs, threshold, radius, ...)
+nbhd_verify(
+  .fcst,
+  obs,
+  threshold,
+  radius,
+  comparator = "ge",
+  include_low = TRUE,
+  include_high = TRUE,
+  ...
+)
 }
 \arguments{
+\item{threshold}{A numeric vector of thresholds to for which to compute the
+neighbourhood scores. Can also be a character vector with numeric values
+between 0 and 1 preceded by a "q" to denote quantile thresholds.}
+
+\item{radius}{The radius, in pixels of the neighbourhoods for which to
+compute the scores.}
+
 \item{...}{}
+
+\item{.data}{A \code{"harp_ens_grid_df"} data frame or a \code{geolist}.}
+
+\item{obs_col}{The name of the observations column in the
+\code{"harp_ens_grid_df"}, or if \code{.data} is a \code{geolist}, a
+\code{geofield}.}
 }
 \description{
-Title
+Neighbourhood verification for ensembles
 }
