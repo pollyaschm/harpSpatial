@@ -88,7 +88,7 @@ Should be in the units that are also used in fc_file_template.}
 by a letter, where the letter gives the units - may be "d" for days, "h" for
 hours or "m" for minutes.}
 
-\item{members}{The (numbers of the) ensemble members to read. While Netcdf and grib2 files 
+\item{members}{The (numbers of the) ensemble members to read. While Netcdf and grib2 files
 can contain multiple members, for other formats we assume they are in separate files
 (see also fc_file_template)}
 
@@ -147,7 +147,7 @@ field to the verification grid.}
 
 \item{ob_accumulation}{The accumulation type of the observation (or reference). This is only used for
 accumulated parameters (e.g. precipitation). NULL signifies that the field is accumulated
-from the start of the model run. That is probably rare for observations. 
+from the start of the model run. That is probably rare for observations.
 Otherwise this should be a string containing a numerical value
 and a time unit, e.g. "15m" or "1h". "0" means an instantaneous value.}
 

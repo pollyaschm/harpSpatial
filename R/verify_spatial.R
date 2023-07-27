@@ -10,7 +10,7 @@
 #' @param by The time between forecasts. Should be a string of a number followed
 #'   by a letter, where the letter gives the units - may be "d" for days, "h" for
 #'   hours or "m" for minutes.
-#' @param members The (numbers of the) ensemble members to read. While Netcdf and grib2 files 
+#' @param members The (numbers of the) ensemble members to read. While Netcdf and grib2 files
 #'   can contain multiple members, for other formats we assume they are in separate files
 #'   (see also fc_file_template)
 #' @param fc_file_path The top level path for the forecast files to read.
@@ -55,7 +55,7 @@
 #'   field to the verification grid.
 #' @param ob_accumulation The accumulation type of the observation (or reference). This is only used for
 #'   accumulated parameters (e.g. precipitation). NULL signifies that the field is accumulated
-#'   from the start of the model run. That is probably rare for observations. 
+#'   from the start of the model run. That is probably rare for observations.
 #'   Otherwise this should be a string containing a numerical value
 #'   and a time unit, e.g. "15m" or "1h". "0" means an instantaneous value.
 #' @param verif_domain A \code{geodomain} that defines the common verification grid.
@@ -105,24 +105,24 @@ verify_spatial <- function(start_date,
                            sqlite_file          = harpSpatial_conf$sqlite_file, #"harp_spatial_scores.sqlite",
                            return_data          = FALSE) {
 
-  # TODO: we may need more options! masked interpolation, options by score, 
+  # TODO: we may need more options! masked interpolation, options by score,
   prm <- harpIO::parse_harp_parameter(parameter)
   by_secs <- harpIO:::units_multiplier(by) * readr::parse_number(by)
 
   # For efficiency, we use a slightly counter-intuitive loop order
   # we don't loop over forecast date and then lead time,
   # because that would cause excessive re-reading (or caching) of observations.
-  # Rather, we loop over all observation times 
+  # Rather, we loop over all observation times
   # and then over all forecasts valid for those times.
   # Close to start_date and end_date you must make sure not to read beyond the time window.
   # TODO: to be even more efficient, we could try to
   #       - open (&parse) FC fields only once
-  #       - read accumulated fields only once (e.g. "acc3h = 6h - 3h" also re-uses 
-  #                                            the 3h field) 
+  #       - read accumulated fields only once (e.g. "acc3h = 6h - 3h" also re-uses
+  #                                            the 3h field)
   #       But that would require extensive "caching", which may end up even slower.
   # Alternative strategy: loop by fcdate, and cache all obs in a list by leadtime
   #     next fcdate -> "ldt -= by" ; drop negative ldt ; read missing obs
-  # For an accumulated variable (precip), the minimum lead time is 
+  # For an accumulated variable (precip), the minimum lead time is
   #     the accumulation time. Otherwise zero.
 
   # some date handling first : create vectors of date_time class
@@ -142,8 +142,8 @@ verify_spatial <- function(start_date,
   if (prm$accum > 0) {
     lead_time <- lead_time[which(lead_time >= prm$accum & lead_time %% prm$accum == 0)]
   }
-  all_fc_dates <- 
-    seq(as.numeric(sdate), as.numeric(edate), by_secs) %>% 
+  all_fc_dates <-
+    seq(as.numeric(sdate), as.numeric(edate), by_secs) %>%
       lubridate::as_datetime()
   all_ob_dates <- (rep(all_fc_dates, each=length(lead_time)) + lead_time ) %>%
     unique() %>%
@@ -165,7 +165,7 @@ verify_spatial <- function(start_date,
   # - maybe even a different field -> need a "modifier"???
   # if (!is.null(ob_param$accum)
   ob_param <- prm
-  ob_param$accum <- readr::parse_number(ob_accumulation) * 
+  ob_param$accum <- readr::parse_number(ob_accumulation) *
                     harpIO:::units_multiplier(ob_accumulation)
   # FIXME: avoid reading domain information for every file (obs and fc)
   #        BUT: we need it once to initialise the regridding. Use "get_domain(file)".
@@ -178,7 +178,7 @@ verify_spatial <- function(start_date,
       file_template = ob_file_template,
       parameter     = ob_param
     )
-    do.call(harpIO::read_grid, 
+    do.call(harpIO::read_grid,
       c(list(file_name=obfile, file_format=ob_file_format,
                    parameter = ob_param, file_format_opts = ob_file_options)))
   }
@@ -198,7 +198,7 @@ verify_spatial <- function(start_date,
         file_path = fc_file_path,
         file_template = fc_file_template)
       do.call(harpIO::read_grid,
-        c(list(file_name = fcfile, file_format = fc_file_format, 
+        c(list(file_name = fcfile, file_format = fc_file_format,
                    parameter = parameter, lead_time = lead_time,
                        file_format_opts = fc_file_options)))
     }
@@ -216,11 +216,11 @@ verify_spatial <- function(start_date,
         file_template = fc_file_template)
       if (length(fcfile) == 1) {
         do.call(harpIO::read_grid,
-                c(list(file_name = fcfile, file_format = fc_file_format, 
+                c(list(file_name = fcfile, file_format = fc_file_format,
                   parameter = parameter, lead_time = lead_time),
-                  fc_file_options))
+                  file_format_opts = fc_file_options))
       } else {
-        lapply(fcfile, harpIO::read_grid, file_format = fc_file_format, 
+        lapply(fcfile, harpIO::read_grid, file_format = fc_file_format,
                 parameter = parameter, lead_time = lead_time, members=members,
                 unlist(fc_file_options))
       }
@@ -328,7 +328,7 @@ verify_spatial <- function(start_date,
         } else {
           # In rare cases the forecast model needs "accumulating" rather than "decumulating"
           #       e.g. when verifying INCA against radar
-          fstep <- readr::parse_number(fc_accumulation) * 
+          fstep <- readr::parse_number(fc_accumulation) *
             harpIO:::units_multiplier(fc_accumulation)
           if (fstep == prm$accum) { # this is easy !
           # nothing to do
@@ -353,7 +353,7 @@ verify_spatial <- function(start_date,
               fc_domain <- fcfield
             }
           }
-          init$regrid_fc <- 
+          init$regrid_fc <-
             meteogrid::regrid.init(
               olddomain = fc_domain,
               newdomain = verif_domain,
@@ -391,10 +391,10 @@ verify_spatial <- function(start_date,
             sc <- multiscore[,c(score_list[[sn]]$primary, score_list[[sn]]$fields)]
             if (is.null(score_tables[[sn]])) {
               template <- spatial_score_table(score_list[[sn]])
-              tbl_struct <- lapply(template$fields, 
-                                   function(x) switch(x, 
+              tbl_struct <- lapply(template$fields,
+                                   function(x) switch(x,
                                              "CHARACTER" = NA_character_,
-                                             "INTEGER"   = NA_integer_, 
+                                             "INTEGER"   = NA_integer_,
                                              "REAL"      = NA_real_,
                                              NA_real_))
               score_tables[[sn]] <- do.call(tibble::tibble, c(tbl_struct, .rows = ncases * nrow))
