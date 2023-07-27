@@ -94,7 +94,7 @@ fss_old <- function(obfield,
 #' @param radius The radius, in pixels of the neighbourhoods for which to
 #'   compute the scores.
 #' @param ...
-#'
+#' @importFrom rlang .data
 #' @return
 #' @export
 #'
@@ -220,7 +220,7 @@ ens_dfss <- function(
 }
 
 #' @export
-ens_dfss.geolist <- function(
+ens_dfss.harp_geolist <- function(
   x, threshold, radius, comparator = "ge",
   include_low = TRUE, include_high = TRUE, num_cores = 1
 ) {
@@ -268,7 +268,7 @@ ens_dfss.harp_ens_grid_df <- function(
     dplyr::rowwise(x),
     dfss = list(
       ens_dfss(
-        as_geolist(as.list(dplyr::pick(dplyr::matches("_mbr[[:digit:]]+")))),
+        geolist(as.list(dplyr::pick(dplyr::matches("_mbr[[:digit:]]+")))),
         threshold,
         radius,
         comparator,
@@ -292,7 +292,7 @@ ens_efss <- function(
 }
 
 #' @export
-ens_efss.geolist <- function(
+ens_efss.harp_geolist <- function(
   x, y, threshold, radius, comparator = "ge",
   include_low = TRUE, include_high = TRUE, num_cores = 1
 ) {
@@ -362,7 +362,7 @@ ens_efss.harp_ens_grid_df <- function(
       {{y}},
       ~list(
         ens_efss(
-          as_geolist(as.list(dplyr::pick(dplyr::matches("_mbr[[:digit:]]+")))),
+          geolist(as.list(dplyr::pick(dplyr::matches("_mbr[[:digit:]]+")))),
           .x,
           threshold,
           radius,
@@ -389,7 +389,7 @@ ens_fss <- function(
 }
 
 #' @export
-ens_fss.geolist <- function(
+ens_fss.harp_geolist <- function(
   x, y, threshold, radius, comparator = "ge",
   include_low = TRUE, include_high = TRUE, ...
 ) {
@@ -451,7 +451,7 @@ ens_fss.harp_ens_grid_df <- function(
       {{y}},
       ~list(
         ens_fss(
-          as_geolist(as.list(dplyr::pick(dplyr::matches("_mbr[[:digit:]]+")))),
+          geolist(as.list(dplyr::pick(dplyr::matches("_mbr[[:digit:]]+")))),
           .x,
           threshold,
           radius,

@@ -23,8 +23,6 @@ between 0 and 1 preceded by a "q" to denote quantile thresholds.}
 \item{radius}{The radius, in pixels of the neighbourhoods for which to
 compute the scores.}
 
-\item{...}{}
-
 \item{.data}{A \code{"harp_ens_grid_df"} data frame or a \code{geolist}.}
 
 \item{obs_col}{The name of the observations column in the
