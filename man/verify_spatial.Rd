@@ -5,26 +5,27 @@
 \title{Run spatial verification on a (for now) deterministic forecast}
 \usage{
 verify_spatial(
-  start_date,
-  end_date,
+  dttm,
+  start_date = NULL,
+  end_date = NULL,
+  by = NULL,
   parameter,
-  model = harpSpatial_conf$model,
+  fcst_model = harpSpatial_conf$fcst_model,
   lead_time = harpSpatial_conf$lead_time,
   lt_unit = harpSpatial_conf$lt_unit,
-  by = harpSpatial_conf$by,
   scores = NULL,
   members = harpSpatial_conf$members,
   fc_file_path = harpSpatial_conf$fc_file_path,
   fc_file_template = harpSpatial_conf$fc_file_template,
   fc_file_format = harpSpatial_conf$fc_file_format,
-  fc_file_options = harpSpatial_conf$fc_file_options,
+  fc_file_opts = harpSpatial_conf$fc_file_opts,
   fc_domain = harpSpatial_conf$fc_domain,
   fc_interp_method = harpSpatial_conf$fc_interp_method,
   fc_accumulation = harpSpatial_conf$fc_accumulation,
   ob_file_path = harpSpatial_conf$ob_file_path,
   ob_file_template = harpSpatial_conf$ob_file_template,
   ob_file_format = harpSpatial_conf$ob_file_format,
-  ob_file_options = harpSpatial_conf$ob_file_options,
+  ob_file_opts = harpSpatial_conf$ob_file_opts,
   ob_domain = harpSpatial_conf$ob_domain,
   ob_interp_method = harpSpatial_conf$ob_interp_method,
   ob_accumulation = harpSpatial_conf$ob_accumulation,
@@ -38,26 +39,27 @@ verify_spatial(
 )
 
 verify_spatial(
-  start_date,
-  end_date,
+  dttm,
+  start_date = NULL,
+  end_date = NULL,
+  by = NULL,
   parameter,
-  model = harpSpatial_conf$model,
+  fcst_model = harpSpatial_conf$fcst_model,
   lead_time = harpSpatial_conf$lead_time,
   lt_unit = harpSpatial_conf$lt_unit,
-  by = harpSpatial_conf$by,
   scores = NULL,
   members = harpSpatial_conf$members,
   fc_file_path = harpSpatial_conf$fc_file_path,
   fc_file_template = harpSpatial_conf$fc_file_template,
   fc_file_format = harpSpatial_conf$fc_file_format,
-  fc_file_options = harpSpatial_conf$fc_file_options,
+  fc_file_opts = harpSpatial_conf$fc_file_opts,
   fc_domain = harpSpatial_conf$fc_domain,
   fc_interp_method = harpSpatial_conf$fc_interp_method,
   fc_accumulation = harpSpatial_conf$fc_accumulation,
   ob_file_path = harpSpatial_conf$ob_file_path,
   ob_file_template = harpSpatial_conf$ob_file_template,
   ob_file_format = harpSpatial_conf$ob_file_format,
-  ob_file_options = harpSpatial_conf$ob_file_options,
+  ob_file_opts = harpSpatial_conf$ob_file_opts,
   ob_domain = harpSpatial_conf$ob_domain,
   ob_interp_method = harpSpatial_conf$ob_interp_method,
   ob_accumulation = harpSpatial_conf$ob_accumulation,
@@ -71,22 +73,27 @@ verify_spatial(
 )
 }
 \arguments{
+\item{dttm}{A vector of date time strings to read. Can be in YYYYMMDD,
+YYYYMMDDhh, YYYYMMDDhhmm, or YYYYMMDDhhmmss format. Can be numeric or
+character. \code{\link[harpCore]{seq_dttm}} can be used to generate a
+vector of equally spaced date-time strings.}
+
 \item{start_date}{Date of the first forecast to read.}
 
 \item{end_date}{Date of the last forecast to read.}
 
+\item{by}{The time between forecasts. Should be a string of a number followed
+by a letter, where the letter gives the units - may be "d" for days, "h" for
+hours or "m" for minutes.}
+
 \item{parameter}{The parameters to read as a character vector.}
 
-\item{model}{The name of the (deterministic or EPS) model.}
+\item{fcst_model}{The name of the (deterministic or EPS) model.}
 
 \item{lead_time}{The lead times to read as a numeric vector.
 Should be in the units that are also used in fc_file_template.}
 
 \item{lt_unit}{The unit used for lead_time. Can be "h" (hours), "m" (minutes), "s" (seconds)}
-
-\item{by}{The time between forecasts. Should be a string of a number followed
-by a letter, where the letter gives the units - may be "d" for days, "h" for
-hours or "m" for minutes.}
 
 \item{members}{The (numbers of the) ensemble members to read. While Netcdf and grib2 files
 can contain multiple members, for other formats we assume they are in separate files
@@ -108,7 +115,7 @@ will always be file_path/template.}
 
 \item{fc_file_format}{The format of the files to read. Can be e.g. "fa" or "grib".}
 
-\item{fc_file_options}{A list with format-specific options for the reader function.}
+\item{fc_file_opts}{A list with format-specific options for the reader function.}
 
 \item{fc_domain}{The forecast domain. If provided, the fc reading can be made faster
 by not extracting domain information (format option meta).}
@@ -137,7 +144,7 @@ will always be file_path/template.}
 
 \item{ob_file_format}{The format of the files to read. Can be e.g. "hdf5" or "grib".}
 
-\item{ob_file_options}{A list with format-specific options for the reader function.}
+\item{ob_file_opts}{A list with format-specific options for the reader function.}
 
 \item{ob_domain}{The observation domain. If provided, the obs reading can be made faster
 by not extracting domain information (format option meta).}
@@ -165,9 +172,16 @@ this directory.}
 
 \item{return_data}{If TRUE, the result is returned as a list of tables.}
 
+\item{model}{The name of the (deterministic or EPS) model.}
+
 \item{fc_options}{A list with format-specific options for the reader function.}
 
 \item{ob_options}{A list with format-specific options for the reader function.}
+
+\item{start_date, }{end_date, by `r lifecycle::badge("deprecated")` Date of the 
+first and last forecast to read. Please use `dttm` together with 
+\code{\link[harpCore]{seq_dttm}} to generate equally
+spaced date-times.}
 
 \item{...}{Not used at thispoint (more info to be added).}
 }

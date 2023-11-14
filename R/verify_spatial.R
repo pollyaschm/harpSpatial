@@ -1,8 +1,14 @@
 #' Run spatial verification on a (for now) deterministic forecast
 #'
-#' @param start_date Date of the first forecast to read.
-#' @param end_date Date of the last forecast to read.
-#' @param model The name of the (deterministic or EPS) model.
+#' @param dttm A vector of date time strings to read. Can be in YYYYMMDD,
+#'   YYYYMMDDhh, YYYYMMDDhhmm, or YYYYMMDDhhmmss format. Can be numeric or
+#'   character. \code{\link[harpCore]{seq_dttm}} can be used to generate a
+#'   vector of equally spaced date-time strings.
+#' @param start_date, end_date, by `r lifecycle::badge("deprecated")` Date of the 
+#'   first and last forecast to read. Please use `dttm` together with 
+#'   \code{\link[harpCore]{seq_dttm}} to generate equally
+#'   spaced date-times.
+#' @param fcst_model The name of the (deterministic or EPS) model.
 #' @param parameter The parameters to read as a character vector.
 #' @param lead_time The lead times to read as a numeric vector.
 #'   Should be in the units that are also used in fc_file_template.
@@ -26,7 +32,7 @@
 #'   zeros - can be omitted or 2, 3 or 4. Note that the full path to the file
 #'   will always be file_path/template.
 #' @param fc_file_format The format of the files to read. Can be e.g. "fa" or "grib".
-#' @param fc_file_options A list with format-specific options for the reader function.
+#' @param fc_file_opts A list with format-specific options for the reader function.
 #' @param fc_domain The forecast domain. If provided, the fc reading can be made faster
 #'    by not extracting domain information (format option meta).
 #' @param fc_interp_method Interpolation method to be used when transforming a forecast
@@ -48,7 +54,7 @@
 #'   zeros - can be omitted or 2, 3 or 4. Note that the full path to the file
 #'   will always be file_path/template.
 #' @param ob_file_format The format of the files to read. Can be e.g. "hdf5" or "grib".
-#' @param ob_file_options A list with format-specific options for the reader function.
+#' @param ob_file_opts A list with format-specific options for the reader function.
 #' @param ob_domain The observation domain. If provided, the obs reading can be made faster
 #'    by not extracting domain information (format option meta).
 #' @param ob_interp_method Interpolation method to be used when transforming a forecast
@@ -72,13 +78,12 @@
 #' @return A list containting tibbles for all scores.
 #' @export
 
-verify_spatial <- function(start_date,
-                           end_date,
+verify_spatial <- function(dttm,
+                           start_date=NULL, end_date=NULL, by=NULL,
                            parameter,
-                           model                = harpSpatial_conf$model,
+                           fcst_model           = harpSpatial_conf$fcst_model,
                            lead_time            = harpSpatial_conf$lead_time, # seq(0,36,3)
                            lt_unit              = harpSpatial_conf$lt_unit, #"h",
-                           by                   = harpSpatial_conf$by, # "12h",
                            scores               = NULL,
                            members              = harpSpatial_conf$members, #NULL,
 #                           members_out          = members,
@@ -86,14 +91,14 @@ verify_spatial <- function(start_date,
                            fc_file_path         = harpSpatial_conf$fc_file_path, # "",
                            fc_file_template     = harpSpatial_conf$fc_file_template, #"",
                            fc_file_format       = harpSpatial_conf$fc_file_format, #"fa",
-                           fc_file_options      = harpSpatial_conf$fc_file_options, #list(),
+                           fc_file_opts         = harpSpatial_conf$fc_file_opts, #list(),
                            fc_domain            = harpSpatial_conf$fc_domain, #NULL,
                            fc_interp_method     = harpSpatial_conf$fc_interp_method, #"closest",
                            fc_accumulation      = harpSpatial_conf$fc_accumulation, #NULL,
                            ob_file_path         = harpSpatial_conf$ob_file_path, #"",
                            ob_file_template     = harpSpatial_conf$ob_file_template, #"",
                            ob_file_format       = harpSpatial_conf$ob_file_format, #"hdf5",
-                           ob_file_options      = harpSpatial_conf$ob_file_options, #list(),
+                           ob_file_opts         = harpSpatial_conf$ob_file_opts, #list(),
                            ob_domain            = harpSpatial_conf$ob_domain, #NULL,
                            ob_interp_method     = harpSpatial_conf$ob_interp_method, #"closest",
                            ob_accumulation      = harpSpatial_conf$ob_accumulation, #"15m",
@@ -107,7 +112,6 @@ verify_spatial <- function(start_date,
 
   # TODO: we may need more options! masked interpolation, options by score,
   prm <- harpIO::parse_harp_parameter(parameter)
-  by_secs <- harpIO:::units_multiplier(by) * readr::parse_number(by)
 
   # For efficiency, we use a slightly counter-intuitive loop order
   # we don't loop over forecast date and then lead time,
@@ -126,14 +130,17 @@ verify_spatial <- function(start_date,
   #     the accumulation time. Otherwise zero.
 
   # some date handling first : create vectors of date_time class
-  sdate <- lubridate::ymd_hm(start_date, tz = "UTC", truncated = 4)
-  if (missing(end_date)) {
-    edate <- sdate
-  } else {
-    edate <- lubridate::ymd_hm(end_date, tz = "UTC", truncated = 4)
-    # add the last fc hour if the date is just YYYYMMDD
-    if (nchar(end_date) < 10) edate <- edate + (24 * 3600 / by_secs - 1) * by_secs
+  if (missing(dttm)) {
+    if (any(sapply(list(start_date, end_date, by), is.null))) {
+      stop(
+        "If `dttm` is not passed, `start_date`, `end_date` ",
+        "and `by` must be passed."
+      )
+    }
+
+    dttm <- harpCore::seq_dttm(start_date, end_date, by)
   }
+
   # convert lead_time to seconds and remove lead_times smaller than accum
   # we don't have 3h precip at 0h forecast.
   # also, we probably want lead_time in steps of the accumulation
@@ -142,15 +149,16 @@ verify_spatial <- function(start_date,
   if (prm$accum > 0) {
     lead_time <- lead_time[which(lead_time >= prm$accum & lead_time %% prm$accum == 0)]
   }
-  all_fc_dates <-
-    seq(as.numeric(sdate), as.numeric(edate), by_secs) %>%
-      lubridate::as_datetime()
+  # dttm is a vector of STRINGS
+  # we want datetime objects to which we can add the lead_time
+
+  all_fc_dates <- harpCore:::unixtime_to_dttm(harpCore:::as_unixtime(dttm))
   all_ob_dates <- (rep(all_fc_dates, each=length(lead_time)) + lead_time ) %>%
     unique() %>%
     sort()
 
   message("Running spatial verification.")
-  message("Forecast dates: ", paste(all_fc_dates, collapse = " "))
+  message("Forecast dates: ", paste(dttm, collapse = " "))
   message("Lead times: ", paste(lead_time / lt_scale, collapse = " "))
   message("Observation dates: ", paste(all_ob_dates, collapse = " ; "))
   # the re-gridding weights will come here:
@@ -172,7 +180,7 @@ verify_spatial <- function(start_date,
   # FIXME: should we do the regridding within the read_grid call?
 
   get_ob <- function(obdate) {
-    obfile <- get_filenames(
+    obfile <- generate_filenames(
       file_date     = format(obdate, "%Y%m%d%H"),
       file_path     = ob_file_path,
       file_template = ob_file_template,
@@ -180,7 +188,7 @@ verify_spatial <- function(start_date,
     )
     do.call(harpIO::read_grid,
       c(list(file_name=obfile, file_format=ob_file_format,
-                   parameter = ob_param, file_format_opts = ob_file_options)))
+                   parameter = ob_param, file_format_opts = ob_file_opts)))
   }
 
   # FIXME: if (!is.null(members) && length(members) > 1)
@@ -190,27 +198,27 @@ verify_spatial <- function(start_date,
   # if "members" is defined (and length > 1) but {MBRx} is not in the template -> single file
   if (is.null(members)) {
     get_fc <- function(fcdate, lead_time) {
-      fcfile <- get_filenames(
+      fcfile <- generate_filenames(
         file_date = fcdate,
         lead_time = lead_time,
         parameter = parameter,
-        det_model = model,
+        det_model = fcst_model,
         file_path = fc_file_path,
         file_template = fc_file_template)
       do.call(harpIO::read_grid,
         c(list(file_name = fcfile, file_format = fc_file_format,
                    parameter = parameter, lead_time = lead_time,
-                       file_format_opts = fc_file_options)))
+                       file_format_opts = fc_file_opts)))
     }
   } else {
     # for EPS models, we try to get the members into a 3D geogrid array.
     # very fast for passing to Rccp functions.
     get_fc <- function(fcdate, lead_time) {
-      fcfile <- get_filenames(
+      fcfile <- generate_filenames(
         file_date = fcdate,
         lead_time = lead_time,
         parameter = parameter,
-        eps_model = model,
+        eps_model = fcst_model,
         members   = members,
         file_path = fc_file_path,
         file_template = fc_file_template)
@@ -218,16 +226,16 @@ verify_spatial <- function(start_date,
         do.call(harpIO::read_grid,
                 c(list(file_name = fcfile, file_format = fc_file_format,
                   parameter = parameter, lead_time = lead_time),
-                  fc_file_options))
+                  fc_file_opts))
       } else {
         lapply(fcfile, harpIO::read_grid, file_format = fc_file_format,
                 parameter = parameter, lead_time = lead_time, members=members,
-                unlist(fc_file_options))
+                unlist(fc_file_opts))
       }
     }
   }
   # We will write to SQL only at the end (more efficient),
-  ncases <- length(all_fc_dates) * length(lead_time)
+  ncases <- length(dttm) * length(lead_time)
   message("expected ncases= ", ncases)
 
   if (is.null(scores)) {
@@ -286,8 +294,8 @@ verify_spatial <- function(start_date,
       if (is.null(init$regrid_ob)) {
         message("Initialising observation regridding.")
         if (is.null(ob_domain)) {
-          if (!is.null(ob_file_options$domain)) {
-            ob_domain <- ob_file_options$domain
+          if (!is.null(ob_file_opts$domain)) {
+            ob_domain <- ob_file_opts$domain
           } else {
             ob_domain <- obfield
           }
@@ -302,7 +310,7 @@ verify_spatial <- function(start_date,
 
     # find forecasts valid for this date/time
     # intersect drops the POSIXct class
-    # valid_fc_dates <- intersect(obdate - lead_time, all_fc_dates)
+    # valid_fc_dates <- intersect(obdate - lead_time, dttm)
     valid_fc_dates <- (obdate - lead_time)[which((obdate - lead_time) %in% all_fc_dates)]
     message("valid FC dates: ", paste(format(valid_fc_dates, "%Y%m%d-%H%M"), collapse = " "))
     # inner loop
@@ -347,8 +355,8 @@ verify_spatial <- function(start_date,
         if (is.null(init$regrid_fc)) {
           message("Initialising fc regridding.")
           if (is.null(fc_domain)) {
-            if (!is.null(fc_file_options$domain)) {
-              fc_domain <- fc_file_options$domain
+            if (!is.null(fc_file_opts$domain)) {
+              fc_domain <- fc_file_opts$domain
             } else {
               fc_domain <- fcfield
             }
@@ -399,7 +407,7 @@ verify_spatial <- function(start_date,
                                              NA_real_))
               score_tables[[sn]] <- do.call(tibble::tibble, c(tbl_struct, .rows = ncases * nrow))
               # we can already fill some constant columns
-              if ("model" %in% names(score_tables[[sn]])) score_tables[[sn]]$model <- model
+              if ("model" %in% names(score_tables[[sn]])) score_tables[[sn]]$model <- fcst_model
               if ("prm" %in% names(score_tables[[sn]]))   score_tables[[sn]]$prm   <- parameter
             }
             # which interval of the score table is to be filled (may be only 1 row -> score[case, ...])
