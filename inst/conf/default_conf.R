@@ -3,12 +3,11 @@
 
 lead_time            = seq(0, 36, 3)
 lt_unit              = "h"
-by                   = "12h"
 members              = NULL
 fc_file_path         = ""
 fc_file_template     = ""
 fc_file_format       = NULL
-fc_file_options      = list()
+fc_file_opts         = list()
 fc_domain            = NULL
 fc_interp_method     = "closest"
 fc_accumulation      = NULL
@@ -17,7 +16,7 @@ fc_accumulation      = NULL
 ob_file_path         = ""
 ob_file_template     = ""
 ob_file_format       = NULL
-ob_file_options      = list()
+ob_file_opts         = list()
 ob_domain            = NULL
 ob_interp_method     = "closest"
 ob_accumulation      = "15m"
