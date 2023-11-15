@@ -22,6 +22,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// hira_scores_
+DataFrame hira_scores_(NumericVector obvect, NumericMatrix indices, NumericMatrix fcfield, NumericVector thresholds, NumericVector scales, NumericVector stratigies);
+RcppExport SEXP _harpSpatial_hira_scores_(SEXP obvectSEXP, SEXP indicesSEXP, SEXP fcfieldSEXP, SEXP thresholdsSEXP, SEXP scalesSEXP, SEXP stratigiesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type obvect(obvectSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type indices(indicesSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type fcfield(fcfieldSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type thresholds(thresholdsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type scales(scalesSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type stratigies(stratigiesSEXP);
+    rcpp_result_gen = Rcpp::wrap(hira_scores_(obvect, indices, fcfield, thresholds, scales, stratigies));
+    return rcpp_result_gen;
+END_RCPP
+}
 // sal_identify_objects
 List sal_identify_objects(NumericMatrix indat, double threshold, double maxobj);
 RcppExport SEXP _harpSpatial_sal_identify_objects(SEXP indatSEXP, SEXP thresholdSEXP, SEXP maxobjSEXP) {
@@ -67,6 +83,31 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericMatrix >::type indat(indatSEXP);
     Rcpp::traits::input_parameter< int >::type rad(radSEXP);
     rcpp_result_gen = Rcpp::wrap(window_mean_from_cumsum(indat, rad));
+    return rcpp_result_gen;
+END_RCPP
+}
+// vector_to_bin
+LogicalVector vector_to_bin(NumericVector indat, float threshold);
+RcppExport SEXP _harpSpatial_vector_to_bin(SEXP indatSEXP, SEXP thresholdSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type indat(indatSEXP);
+    Rcpp::traits::input_parameter< float >::type threshold(thresholdSEXP);
+    rcpp_result_gen = Rcpp::wrap(vector_to_bin(indat, threshold));
+    return rcpp_result_gen;
+END_RCPP
+}
+// window_sum_from_cumsum_for_ij
+NumericVector window_sum_from_cumsum_for_ij(NumericMatrix indat, int rad, NumericMatrix indices);
+RcppExport SEXP _harpSpatial_window_sum_from_cumsum_for_ij(SEXP indatSEXP, SEXP radSEXP, SEXP indicesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type indat(indatSEXP);
+    Rcpp::traits::input_parameter< int >::type rad(radSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type indices(indicesSEXP);
+    rcpp_result_gen = Rcpp::wrap(window_sum_from_cumsum_for_ij(indat, rad, indices));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -167,10 +208,13 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_harpSpatial_harpSpatial_basic_scores", (DL_FUNC) &_harpSpatial_harpSpatial_basic_scores, 2},
+    {"_harpSpatial_hira_scores_", (DL_FUNC) &_harpSpatial_hira_scores_, 6},
     {"_harpSpatial_sal_identify_objects", (DL_FUNC) &_harpSpatial_sal_identify_objects, 3},
     {"_harpSpatial_cumsum2d", (DL_FUNC) &_harpSpatial_cumsum2d, 1},
     {"_harpSpatial_cumsum2d_bin", (DL_FUNC) &_harpSpatial_cumsum2d_bin, 2},
     {"_harpSpatial_window_mean_from_cumsum", (DL_FUNC) &_harpSpatial_window_mean_from_cumsum, 2},
+    {"_harpSpatial_vector_to_bin", (DL_FUNC) &_harpSpatial_vector_to_bin, 2},
+    {"_harpSpatial_window_sum_from_cumsum_for_ij", (DL_FUNC) &_harpSpatial_window_sum_from_cumsum_for_ij, 3},
     {"_harpSpatial_windowMean", (DL_FUNC) &_harpSpatial_windowMean, 2},
     {"_harpSpatial_fss_from_fractions", (DL_FUNC) &_harpSpatial_fss_from_fractions, 2},
     {"_harpSpatial_cpp_neighborhood_scores", (DL_FUNC) &_harpSpatial_cpp_neighborhood_scores, 8},
