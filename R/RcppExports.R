@@ -5,6 +5,10 @@ harpSpatial_basic_scores <- function(obfield, fcfield) {
     .Call('_harpSpatial_harpSpatial_basic_scores', PACKAGE = 'harpSpatial', obfield, fcfield)
 }
 
+hira_scores_ <- function(obvect, indices, fcfield, thresholds, scales, stratigies) {
+    .Call('_harpSpatial_hira_scores_', PACKAGE = 'harpSpatial', obvect, indices, fcfield, thresholds, scales, stratigies)
+}
+
 #' @export
 sal_identify_objects <- function(indat, threshold, maxobj) {
     .Call('_harpSpatial_sal_identify_objects', PACKAGE = 'harpSpatial', indat, threshold, maxobj)
@@ -20,6 +24,14 @@ cumsum2d_bin <- function(indat, threshold) {
 
 window_mean_from_cumsum <- function(indat, rad) {
     .Call('_harpSpatial_window_mean_from_cumsum', PACKAGE = 'harpSpatial', indat, rad)
+}
+
+vector_to_bin <- function(indat, threshold) {
+    .Call('_harpSpatial_vector_to_bin', PACKAGE = 'harpSpatial', indat, threshold)
+}
+
+window_sum_from_cumsum_for_ij <- function(indat, rad, indices) {
+    .Call('_harpSpatial_window_sum_from_cumsum_for_ij', PACKAGE = 'harpSpatial', indat, rad, indices)
 }
 
 windowMean <- function(indat, radius) {

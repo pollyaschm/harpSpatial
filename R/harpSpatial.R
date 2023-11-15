@@ -27,6 +27,21 @@ harpSpatial_conf <- NULL
   if (config_file != "") {
     read_spatial_config(config_file)
   }
+ ###################
+  # HiRA 
+  if (!is.environment("harpSpatial_hira_conf")) {
+    harpSpatial_hira_conf <<- new.env(parent=baseenv()) 
+  }
+
+  config_file <- file.path(libname, packagename, "conf/default_hira_conf.R")
+  
+  if (file.exists(config_file)) source(config_file, local=harpSpatial_hira_conf)
+   
+  # now look for local config
+  config_file <- Sys.getenv("HARP_SPATIAL_HIRA_CONFIG")
+  if (config_file != "") {
+    read_hira_config(config_file)
+  }				 
 
 }
 .onUnload <- function (libpath) {
