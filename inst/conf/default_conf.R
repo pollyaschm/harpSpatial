@@ -26,6 +26,11 @@ verif_domain         = NULL
 use_mask             = FALSE
 
 # SCORE DETAILS: thresholds etc.
+
+#scores = names(spatial_scores()) # the full list is not yet defined
+# e.g. scores = c("FSS", "SAL", "mse")
+scores = c("FSS", "SAL", "mse", "mae", "bias", "NACT")
+
 # NOTE: the window_sizes must be n >= 0.
 #  The actual boxes have size 2*n+1
 window_sizes         = c(0, 1, 2, 4, 8, 12, 20)

@@ -25,7 +25,7 @@ harpSpatial_conf <- NULL
   # now look for local config
   config_file <- Sys.getenv("HARP_SPATIAL_CONFIG")
   if (config_file != "") {
-    harpSpatial_read_config(config_file)
+    read_spatial_config(config_file)
   }
 
 }

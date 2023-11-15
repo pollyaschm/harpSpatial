@@ -84,7 +84,7 @@ verify_spatial <- function(dttm,
                            fcst_model           = harpSpatial_conf$fcst_model,
                            lead_time            = harpSpatial_conf$lead_time, # seq(0,36,3)
                            lt_unit              = harpSpatial_conf$lt_unit, #"h",
-                           scores               = NULL,
+                           scores               = harpSpatial_conf$scores,
                            members              = harpSpatial_conf$members, #NULL,
 #                           members_out          = members,
 #                           lags                 = harpSpatial_conf$lags, #NULL,
@@ -396,7 +396,8 @@ verify_spatial <- function(dttm,
           intv <- seq_len(nrow) + (case - 1) * nrow
           for (sn in score_function_subset[[sf]]) {
             message("-----> Calling score ", sn)
-            sc <- multiscore[,c(score_list[[sn]]$primary, score_list[[sn]]$fields)]
+            sc <- multiscore[,c(score_list[[sn]]$primary, score_list[[sn]]$fields), drop=FALSE]
+            # NOTE: if sc is a single number the column name is dropped by default!
             if (is.null(score_tables[[sn]])) {
               template <- spatial_score_table(score_list[[sn]])
               tbl_struct <- lapply(template$fields,
