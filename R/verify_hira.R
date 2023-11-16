@@ -180,12 +180,12 @@ verify_hira <- function(dttm,
 	
 	read_obs <- function (domain) {
 	
-	    hira_stations  <- stations
+	    .hira_stations  <- stations
 		
-        indices <- meteogrid::point.closest.init(domain=infield, lon=stations$lon, lat=stations$lat,
+        .indices <- meteogrid::point.closest.init(domain=domain, lon=stations$lon, lat=stations$lat,
                                       mask=NULL, pointmask=NULL, force=FALSE)
 
-        station_with_indices <- bind_cols(hira_stations,indices)
+        station_with_indices <- bind_cols(.hira_stations,.indices)
         
         # Assuming indices is a data frame
         .selected_stations <- station_with_indices %>%
@@ -215,8 +215,10 @@ verify_hira <- function(dttm,
 		        lon=.selected_stations$lon, 
 		    	lat=.selected_stations$lat,
 		    	method=interp_method) 
+				
+		.selected_stations <- .selected_stations %>% select(c(SID,i,j))
 		
-		list( obs = obs , selected_stations = .selected_stations, interp_weights = .interp_weights )
+		list( obs = obs,  interp_weights = .interp_weights , selected_stations = .selected_stations)
 	}
 	
 	
@@ -230,7 +232,8 @@ verify_hira <- function(dttm,
 	domain <- NULL 
 	all_obs <- NULL 
     interp_weights <- NULL 
-	selected_stations <- NULL
+	selected_stations <- NULL 
+	selected_station_ids <- NULL
   #1
    
 
@@ -292,22 +295,29 @@ verify_hira <- function(dttm,
 
   # Define the list of score tables.
   score_tables <- vector("list", length(score_list))
-  names(score_tables) <- names(score_list)
+  #names(score_tables) <- sapply( names(score_list) , function(x) paste0("hira_", x)) 
+  names(score_tables) <-  names(score_list)  
   # some score funtions calculate several scores together
   # we don't want to call them twice...
   score_function_list <- unique(sapply(score_list, function(x) x$func))
   # And conversely, for every such "multiscore", we need the list of scores that depend on it
   score_function_subset <- sapply(score_function_list, function(msc)
-                                  names(which(sapply(score_list, function(x) x$func == msc))))
+                                  names(which(sapply(score_list, function(x) x$func == msc ))))
+								  
+  hira_strategies <- unique(sapply(score_list, function(x) x$index))   
+  hira_strategies <- as.vector(hira_strategies[ hira_strategies >-1 ])
+  
 
-  is_basic_scores <- FALSE # TODO: FIX this 
+
+  do_basic_scores <- "basic" %in% names(score_list)
+  
   message("score functions: ", paste(score_function_list, collapse=" "))
   # MAIN LOOP
   case <- 1
   for (ob in seq_along(all_ob_dates)) {  # (obdate in all_ob_dates) looses POSIXct class
     obdate <- all_ob_dates[ob]
     message("=====\nobdate: ", format(obdate, "%Y%m%d-%H%M"))
-    obsvect <- NULL
+    obsvect_full <- NULL
 
 
     # find forecasts valid for this date/time
@@ -344,18 +354,19 @@ verify_hira <- function(dttm,
 		  all_obs <- readed$obs 
 		  interp_weights <- readed$interp_weights 
 	      selected_stations <- readed$selected_stations
+		  selected_station_ids <- selected_stations %>% select(SID)  
 	  }
 	  
 
 	  ## 
-	  if (is.null(obsvect)){
-	     obsvect <- dplyr::filter(all_obs, valid_dttm == obdate)
+	  if (is.null(obsvect_full)){
+	     obsvect_full <- dplyr::filter(all_obs, valid_dttm == obdate)
+         obsvect_full <- left_join(selected_station_ids,obsvect_full, by="SID") 
+		 names(obsvect_full)[names(obsvect_full) == parameter] <- "obs"
+		 
 	  }
 	  
-	  # find forecast vector for basic scores 
-	  if (is_basic_scores){
-	    fcvect <- NULL # TODO: Complate this 
-	  }
+	  
 	  
 
 	  
@@ -382,6 +393,26 @@ verify_hira <- function(dttm,
         }
       }
 
+ 
+	  # find forecast vector for basic scores
+      final_obs <- NULL  
+      final_fcst <- NULL
+      temp_obs_fcst <- NULL 		 
+	  if (do_basic_scores){
+	     fcvect <- meteogrid::point.interp(fcfield, weights = interp_weights)
+         fcvect <- as_tibble(list( fcst =fcvect, SID = selected_station_ids$SID ))
+         temp_obs_fcst <- left_join(obsvect_full,fcvect, by="SID") %>% drop_na()
+		 final_obs <-  temp_obs_fcst$obs 
+		 final_fcst <-  temp_obs_fcst$fcst
+		 
+	  } else {
+	     temp_obs_fcst <- obsvect_full %>% select(obs,i,j) %>% drop_na()
+		 final_obs <-  temp_obs_fcst$obs 
+		 final_fcst <-  NULL 
+	  } 
+      temp_indices <- temp_obs_fcst %>% select(i,j)
+	  final_indices <- matrix(unlist(temp_indices), nrow = length(temp_indices), byrow = TRUE)
+
       #############################
       ### NOW WE COMPUTE SCORES ###
       #############################
@@ -393,41 +424,57 @@ verify_hira <- function(dttm,
         # NOTE: args() only works if the function is found
         #       so either exported, or only internal use
 #        arglist <- names(as.list(args(sf)))
-        
-		myargs <- list(obsvect=obs_for_date, fcfield=fcfield,
-                         thresholds = thresholds,
-                         scales = window_sizes)
-        message("--> Calling ", sf)
-        multiscore <- do.call(sf, myargs)
 
-        if (!is.null(multiscore)) {
-          # nrows per case for this score
-          message("output dim : ", paste(dim(multiscore), collapse="x"))
-          nrow <- dim(multiscore)[1]
-          # interval of rows for this case in full score table
-          intv <- seq_len(nrow) + (case - 1) * nrow
-          for (sn in score_function_subset[[sf]]) {
-            message("-----> Calling score ", sn)
-            sc <- multiscore[,c(score_list[[sn]]$primary, score_list[[sn]]$fields)]
-            if (is.null(score_tables[[sn]])) {
-              template <- spatial_score_table(score_list[[sn]])
-              tbl_struct <- lapply(template$fields,
-                                   function(x) switch(x,
-                                             "CHARACTER" = NA_character_,
-                                             "INTEGER"   = NA_integer_,
-                                             "REAL"      = NA_real_,
-                                             NA_real_))
-              score_tables[[sn]] <- do.call(tibble::tibble, c(tbl_struct, .rows = ncases * nrow))
-              # we can already fill some constant columns
-              if ("model" %in% names(score_tables[[sn]])) score_tables[[sn]]$model <- fcst_model
-              if ("prm" %in% names(score_tables[[sn]]))   score_tables[[sn]]$prm   <- parameter
+		#print(is.vector(obs_fc_vect$obs))
+		#print(is.vector(obs_fc_vect$fcst))
+		#print(is.matrix(indices))
+		#print(is.matrix(fcfield))
+		#print(is.vector(thresholds))
+		#print(is.vector(window_sizes))
+		#print(is.vector(hira_strategies))
+		
+		myargs <- list(obsvect=final_obs, fcvect = final_fcst,  indices = final_indices, fcfield=fcfield,
+                         thresholds = thresholds,
+                         scales = window_sizes, strategies = hira_strategies, execute = TRUE ) # TODO: fill correct stratigies from scores 
+        message("--> Calling ", sf)
+        multiscore_list <- do.call(sf, myargs)
+
+        if (!is.null(multiscore_list)) {
+	
+		for (msl in names(multiscore_list)) {
+		    multiscore <- as_tibble(multiscore_list[[msl]])
+
+            # nrows per case for this score
+            message("output dim : ", paste(dim(multiscore), collapse="x"))
+			
+
+			
+            nrow <- dim(multiscore)[1]
+            # interval of rows for this case in full score table
+            intv <- seq_len(nrow) + (case - 1) * nrow
+            for (sn in score_function_subset[[sf]]) {
+              message("-----> Calling score ", sn)
+              sc <- multiscore[,c(score_list[[sn]]$primary, score_list[[sn]]$fields)]
+              if (is.null(score_tables[[sn]])) {
+                template <- hira_score_table(score_list[[sn]])
+                tbl_struct <- lapply(template$fields,
+                                     function(x) switch(x,
+                                               "CHARACTER" = NA_character_,
+                                               "INTEGER"   = NA_integer_,
+                                               "REAL"      = NA_real_,
+                                               NA_real_))
+                score_tables[[sn]] <- do.call(tibble::tibble, c(tbl_struct, .rows = ncases * nrow))
+                # we can already fill some constant columns
+                if ("model" %in% names(score_tables[[sn]])) score_tables[[sn]]$model <- fcst_model
+                if ("prm" %in% names(score_tables[[sn]]))   score_tables[[sn]]$prm   <- parameter
+              }
+              # which interval of the score table is to be filled (may be only 1 row -> score[case, ...])
+              # NOTE: save fcdate as unix date, leadtime in seconds !
+              score_tables[[sn]]$fcdate[intv] <- as.numeric(fcdate)
+              score_tables[[sn]]$leadtime[intv] <- ldt
+              score_tables[[sn]][intv, names(sc)] <- sc
             }
-            # which interval of the score table is to be filled (may be only 1 row -> score[case, ...])
-            # NOTE: save fcdate as unix date, leadtime in seconds !
-            score_tables[[sn]]$fcdate[intv] <- as.numeric(fcdate)
-            score_tables[[sn]]$leadtime[intv] <- ldt
-            score_tables[[sn]][intv, names(sc)] <- sc
-          }
+		  }
         }
       }
 
@@ -459,7 +506,7 @@ save_spatial_verif <- function(score_tables, sqlite_path, sqlite_file) {
   db <- harpIO:::dbopen(db_file)
   for (sc in names(score_tables)) {
     # check for score table and create if necessary
-    tab <- spatial_score_table(hira_scores(score = sc))
+    tab <- hira_score_table(hira_scores(score = sc))
     # drop empty rows (missing cases)
     harpIO:::create_table(db, sc, tab$fields, tab$primary)
     # TODO: should we drop all cases were any field is missing?
@@ -470,4 +517,44 @@ save_spatial_verif <- function(score_tables, sqlite_path, sqlite_file) {
 
   harpIO:::dbclose(db)
 }
+
+#####################################
+# DEFINITION OF VERIFICATION TABLES #
+#####################################
+# spatial_tables. Column names may not have a space or full stop.
+# anyway, we hardcode per table
+
+# return table description for spatial verification score tables
+## @param tab a table name ("basic" or "fuzzy")
+# @colnames Character vector giving the names of all the columns needed to describe the score (like c("threshold", "scale"), or c("S", "A", "L") 
+# not exported
+hira_score_table <- function(template) {
+  # NOTE: if we assume that we have different SQLite files for every parameter
+  #       we don't really need to add the "prm" column.
+  #       BUT: if we ever move to a full SQL database, we might want it anyway.
+  # NOTE: we decided to switch fcdate back to unix time, so fctime is no longer needed
+  # NOTE: leadtime should be in seconds. Always. Makes it easy to do date calculations.
+  standard_fields <- c(
+    "model"    = "CHARACTER",
+    "prm"      = "CHARACTER",
+    "fcdate"   = "REAL",
+#    "fctime"   = "REAL",
+    "leadtime" = "REAL"
+  )
+  
+#  score_fields <- structure(rep("REAL", length(score_names)), names=score_names)
+  #TODO:  Separate integer fields 
+  score_fields <- rep("REAL", length(template$fields))
+  names(score_fields) <- template$fields
+  primary_fields <- rep("REAL", length(template$primary))
+  names(primary_fields) <- template$primary
+
+  list(
+    fields = c(standard_fields, primary_fields, score_fields),
+    primary = c(names(standard_fields), template$primary)
+  )
+}
+
+# TODO: info table, ...
+
 

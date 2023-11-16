@@ -12,19 +12,28 @@ float TS(float a, float b, float c) {
   float ts = denum > 0 ? a / denum : 0;
   
 }
+
 // [[Rcpp::export]]
-DataFrame hira_scores_(NumericVector obvect, NumericMatrix indices, NumericMatrix fcfield,
-                                           NumericVector thresholds, NumericVector scales, NumericVector stratigies) {
+Rcpp::List hira_hira(NumericVector obsvect, NumericMatrix indices, NumericMatrix fcfield,NumericVector thresholds,
+NumericVector scales, NumericVector strategies) {
+	   
+	   Rcout << "dims: " << strategies.length();
+	   return NULL;
+}
+
+// [[Rcpp::export]]
+Rcpp::List get_hira_scores(NumericVector obsvect, NumericMatrix indices, NumericMatrix fcfield,NumericVector thresholds,
+NumericVector scales, NumericVector strategies) {
   // indices is Nx2 matrix the location of the grid point in the model passed grid.
   // indices(0,:) is the first index and indices(1,:) is the second index of fcfield which represents the model grid.
 
-  double a, b, c, dd;
+
   int n_thresholds = thresholds.length();
   int n_scales = scales.length();
   int ni = fcfield.nrow(), nj = fcfield.ncol();
-  int no = obvect.length();
+  int no = obsvect.length();
   
-  int nstrat = stratigies.length(); // Number of Strategies
+  int nstrat = strategies.length(); // Number of Strategies
   
   NumericVector sum_fc(no);
   NumericVector sum_ob(no);
@@ -68,7 +77,7 @@ DataFrame hira_scores_(NumericVector obvect, NumericMatrix indices, NumericMatri
   bool is_csrr = false; // 3 Conditional square root for RPS
   
   for (int is = 0; is < nstrat; is++) {
-    int stra = (int) stratigies(is);
+    int stra = (int) strategies(is);
     
     switch (stra) {
     case 0:
@@ -97,7 +106,7 @@ DataFrame hira_scores_(NumericVector obvect, NumericMatrix indices, NumericMatri
       }
       }
     for (int j = 0; j < no; j++) { 
-      obsongrid(indices(j,0),indices(j,1)) = obvect[j];
+      obsongrid(indices(j,0),indices(j,1)) = obsvect[j];
     }
     
   }
@@ -105,7 +114,7 @@ DataFrame hira_scores_(NumericVector obvect, NumericMatrix indices, NumericMatri
   int k = 0;
   for (int th = 0; th < n_thresholds; th++) {
     
-    bin_ob = vector_to_bin(obvect, thresholds[th]);
+    bin_ob = vector_to_bin(obsvect, thresholds[th]);
     cum_fc = cumsum2d_bin(fcfield, thresholds[th]);
     
 	if (is_pph) {
@@ -210,29 +219,52 @@ DataFrame hira_scores_(NumericVector obvect, NumericMatrix indices, NumericMatri
     } // sc
   } // th
   
-  Rcpp::DataFrame df = Rcpp::DataFrame::create(Named("threshold") = res_thresh,
-                                               Named("scale") = res_size);
+   Rcpp::List resultList;
+   
+
   if (is_multi_event) {
-    df["me_a"] = res_me_a;
-    df["me_b"] = res_me_b;
-    df["me_c"] = res_me_c;
-    df["me_d"] = res_me_d;
+	Rcpp::DataFrame df = Rcpp::DataFrame::create(Named("threshold") = res_thresh,
+                                                 Named("scale") = res_size);
+    df["hit"] = res_me_a;
+    df["fa"] = res_me_b;
+    df["miss"] = res_me_c;
+    df["cr"] = res_me_d;
+	
+	resultList["me"] = df;
   }
   if (is_pragmatic) {
-    df["pra_bs"] = res_pra_bss;
-    df["pra_bs"] = res_pra_bs;
+	  
+	Rcpp::DataFrame df = Rcpp::DataFrame::create(Named("threshold") = res_thresh,
+                                                 Named("scale") = res_size);
+    df["bss"] = res_pra_bss;
+    df["bs"] = res_pra_bs;
+	resultList["pragm"] = df;
   }
   
   if (is_csrr) {
-    df["csrr_pre_prs"] = res_csrr_pre_prs;
-    df["csrr_pre_px"] = res_csrr_pre_px;
+	  
+	Rcpp::DataFrame df = Rcpp::DataFrame::create(Named("threshold") = res_thresh,
+                                                 Named("scale") = res_size);
+												 
+    df["prs"] = res_csrr_pre_prs;
+    df["px"] = res_csrr_pre_px;
+	
+	resultList["csrr"] = df;
+	
   }
   
   if (is_pph) {
-    df["pph_a"] = res_td_a;
-    df["pph_b"] = res_td_b;
-    df["pph_c"] = res_td_c;
-    df["pph_d"] = res_td_d;
+	Rcpp::DataFrame df = Rcpp::DataFrame::create(Named("threshold") = res_thresh,
+                                                 Named("scale") = res_size);
+												 
+    df["hit"] = res_td_a;
+    df["fa"] = res_td_b;
+    df["miss"] = res_td_c;
+    df["cr"] = res_td_d;
+	
+	resultList["pph"] = df;
+	
   }
-  return df; 
+  return resultList; 
 }
+  
