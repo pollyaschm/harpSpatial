@@ -2,7 +2,7 @@
 % Please edit documentation in R/read_hira_config.R
 \name{read_hira_config}
 \alias{read_hira_config}
-\title{Read local harpSpatial configuration files}
+\title{Read local harpSpatial configuration files for HiRA}
 \usage{
 read_hira_config(config_file = NULL)
 }
@@ -11,5 +11,5 @@ read_hira_config(config_file = NULL)
 If NULL, the current configuration is printed.}
 }
 \description{
-Read local harpSpatial configuration files
+Read local harpSpatial configuration files for HiRA
 }

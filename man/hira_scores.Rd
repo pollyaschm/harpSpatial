@@ -2,22 +2,19 @@
 % Please edit documentation in R/hira_scores.R
 \name{hira_scores}
 \alias{hira_scores}
-\title{Run "fuzzy" spatial verification for 1 case}
+\title{Run "HiRA" spatial verification for 1 case}
 \usage{
 hira_scores(score = NULL, execute = NULL, ...)
 }
 \arguments{
-\item{obfield}{Observation grid.}
+\item{score}{One of HiRA Scores}
 
-\item{fcfield}{Forecast field}
-
-\item{thresholds}{A vector of thresholds}
-
-\item{scales}{A vector of (odd!) window sizes}
+\item{execute}{If True then fire the score function}
 }
 \value{
-A tibble with columns for threshold, window_size and various scores.
+A tibble with columns for obsvect, fcstvect fcfield, threshold, scales ...
+not exported
 }
 \description{
-Run "fuzzy" spatial verification for 1 case
+Run "HiRA" spatial verification for 1 case
 }

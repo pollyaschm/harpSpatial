@@ -1,19 +1,19 @@
-# various spatial verification scores
+# various HiRA scores
 
-#' Run "fuzzy" spatial verification for 1 case
+#' Run "HiRA" spatial verification for 1 case
 #'
-#' @param obfield Observation grid.
-#' @param fcfield Forecast field
-#' @param thresholds A vector of thresholds
-#' @param scales A vector of (odd!) window sizes
-#' @return A tibble with columns for threshold, window_size and various scores.
-#' @export
+#' @param score One of HiRA Scores 
+#' @param execute If True then fire the score function
+#' @return A tibble with columns for obsvect, fcstvect fcfield, threshold, scales ...
+#' not exported 
 hira_scores <- function(score = NULL, execute = NULL, ...) {
   # TODO: add score options, plot_func and plot_opt
   # FIXME: you MUST indicate the primary fields (e.g. threshold & scale) !
   # the index here should be comatible with the strategies.
   score_list <- list(
-                     "hira_basic"  = list(index = -1, fields = c("bias","mse","mae", "count"), func = "scores_hira_basic"),
+                     "hira_bias"   = list(index = -1, fields = c("bias", "count"), func = "scores_hira_basic"),
+                     "hira_mse"    = list(index = -1, fields = c("mse", "count"),  func = "scores_hira_basic"),
+                     "hira_mae"    = list(index = -1, fields = c("mae", "count"),  func = "scores_hira_basic"),
                      "hira_me"     = list(index =  0, fields = c("hit", "fa", "miss", "cr"), primary = c("threshold", "scale"), func = "scores_hira"),
                      "hira_pragm"  = list(index =  1, fields = c("bss","bs"), primary = c("threshold", "scale"), func = "scores_hira"),
                      "hira_crss"   = list(index =  2, fields = c("prs","px"), primary = c("threshold", "scale"), func = "scores_hira"),
@@ -41,7 +41,12 @@ hira_scores <- function(score = NULL, execute = NULL, ...) {
   
 }
 
-##' @export
+#' Run "HiRA" spatial verification for 1 case
+#'
+#' @param obsvect One of HiRA Scores 
+#' @param fcvect If True then fire the score function
+#' @return A list of bias, mse and mae.
+#' not exported  
 scores_hira <- function (obsvect, fcvect,...) {
 	  
    # Calculate MSE
@@ -59,8 +64,12 @@ scores_hira <- function (obsvect, fcvect,...) {
 }
 
  
-
-##' @export
+#' Run "HiRA" spatial verification for 1 case
+#'
+#' @param obsvect One of HiRA Scores 
+#' @param fcvect If True then fire the score function
+#' @return A list of bias, mse and mae.
+#' not exported 
 scores_hira  <- function(obsvect, indices, fcfield, thresholds, scales,strategies, ...) {
     scores <- get_hira_scores(obsvect = obsvect,indices=indices,
 	  fcfield=fcfield,thresholds=thresholds,scales=scales, strategies=strategies) 

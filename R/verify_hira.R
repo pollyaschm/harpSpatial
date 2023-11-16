@@ -4,17 +4,26 @@
 #'   YYYYMMDDhh, YYYYMMDDhhmm, or YYYYMMDDhhmmss format. Can be numeric or
 #'   character. \code{\link[harpCore]{seq_dttm}} can be used to generate a
 #'   vector of equally spaced date-time strings.
-#' @param fcst_model The name of the (deterministic or EPS) model.
 #' @param parameter The parameters to read as a character vector.
 #' @param lead_time The lead times to read as a numeric vector.
 #'   Should be in the units that are also used in fc_file_template.
 #' @param lt_unit The unit used for lead_time. Can be "h" (hours), "m" (minutes), "s" (seconds)
-#' @param by The time between forecasts. Should be a string of a number followed
-#'   by a letter, where the letter gives the units - may be "d" for days, "h" for
-#'   hours or "m" for minutes.
-#' @param members The (numbers of the) ensemble members to read. While Netcdf and grib2 files
-#'   can contain multiple members, for other formats we assume they are in separate files
-#'   (see also fc_file_template)
+#' @param stations The IDs of the stations to read from the files. By default
+#'   this is full list from harpCore::station_list, the stations outside the domain interior will be excluded.
+#' @param padding_i Number of grid points to define the domain interior in the x direction.
+#' @param padding_j Number of grid points to define the domain interior in the y direction.
+#' @param scores HiRA HiRA and basic scores
+#'   me:    Multi Event
+#'   pragm: Pragramtic 
+#'   crss:  Conditional Square Root RPS
+#'   pph:   Theat Detection
+#'   bias:  Bias 
+#'   mse:   Mean Squared Error  
+#'   mae:   Mean Absolute Error 
+#' @param interp_method interpolation method from model grid 
+#' @param obs_path Path to the observation files
+#' @param obsfile_template Template of observation files. 
+#' @param fcst_model The name of the (deterministic or EPS) model.
 #' @param fc_file_path The top level path for the forecast files to read.
 #' @param fc_file_template The file type to generate the template for. Can be
 #'   "harmoneps_grib", "harmeoneps_grib_fp", "harmoneps_grib_sfx", "meps_met",
@@ -29,42 +38,13 @@
 #'   will always be file_path/template.
 #' @param fc_file_format The format of the files to read. Can be e.g. "fa" or "grib".
 #' @param fc_file_opts A list with format-specific options for the reader function.
-#' @param fc_domain The forecast domain. If provided, the fc reading can be made faster
-#'    by not extracting domain information (format option meta).
-#' @param fc_interp_method Interpolation method to be used when transforming a forecast
-#'   field to the verification grid.
 #' @param fc_accumulation The accumulation type of the forecast. This is only used for
 #'   accumulated parameters (e.g. precipitation). NULL signifies that the field is accumulated
 #'   from the start of the model run. Otherwise this should be a string containing a numerical value
 #'   and a time unit, e.g. "15m" or "1h".
-#' @param ob_file_path The top level path for the forecast files to read.
-#' @param ob_file_template The file type to generate the template for. Can be
-#'   "harmoneps_grib", "harmeoneps_grib_fp", "harmoneps_grib_sfx", "meps_met",
-#'   "harmonie_grib", "harmonie_grib_fp", "harmone_grib_sfx", "vfld", "vobs", or
-#'   "fctable". If anything else is passed, it is returned unmodified. In this
-#'   case substitutions can be used. Available substitutions are {YYYY} for
-#'   year, \{MM\} for 2 digit month with leading zero, \{M\} for month with no
-#'   leading zero, and similarly \{DD\} or \{D\} for day, \{HH\} or \{H\} for
-#'   hour, \{mm\} or \{m\} for minute. Also \{LDTx\} for lead time and \{MBRx\}
-#'   for ensemble member where x is the length of the string including leading
-#'   zeros - can be omitted or 2, 3 or 4. Note that the full path to the file
-#'   will always be file_path/template.
-#' @param ob_file_format The format of the files to read. Can be e.g. "hdf5" or "grib".
-#' @param ob_file_opts A list with format-specific options for the reader function.
-#' @param ob_domain The observation domain. If provided, the obs reading can be made faster
-#'    by not extracting domain information (format option meta).
-#' @param ob_interp_method Interpolation method to be used when transforming a forecast
-#'   field to the verification grid.
-#' @param ob_accumulation The accumulation type of the observation (or reference). This is only used for
-#'   accumulated parameters (e.g. precipitation). NULL signifies that the field is accumulated
-#'   from the start of the model run. That is probably rare for observations.
-#'   Otherwise this should be a string containing a numerical value
-#'   and a time unit, e.g. "15m" or "1h". "0" means an instantaneous value.
-#' @param verif_domain A \code{geodomain} that defines the common verification grid.
-#' @param return_data          = TRUE,
-#' @param thresholds Thresholds used for FSS, ...
 #' @param window_sizes Scales used for fuzzy methods like FSS. A vector of box sizes.
 #'   All values must be odd integers (so the central point is really in the center of a box).
+#' @param thresholds Thresholds used for FSS, ...
 #' @param sqlite_path If specified, SQLite files are generated and written to
 #'   this directory.
 #' @param sqlite_file Name of SQLite file.
@@ -76,19 +56,21 @@
 
 verify_hira <- function(dttm,
                            parameter,
+                           lead_time            = harpSpatial_hira_conf$lead_time, # seq(0,36,3)
+                           lt_unit              = harpSpatial_hira_conf$lt_unit, #"h",
+
 						   # HiRA
 						   stations             = harpCore::station_list,
 						   padding_i            = 5,
 						   padding_j            = 5,
-						   obs_path             = ".",
-                           fcst_model           = harpSpatial_hira_conf$fcst_model,
-                           lead_time            = harpSpatial_hira_conf$lead_time, # seq(0,36,3)
-                           lt_unit              = harpSpatial_hira_conf$lt_unit, #"h",
                            scores               = NULL,
 						   interp_method        = "nearest",
-                           members              = harpSpatial_hira_conf$members, #NULL,
+#                           members              = harpSpatial_hira_conf$members, #NULL,
 #                           members_out          = members,
 #                           lags                 = harpSpatial_hira_conf$lags, #NULL,
+						   obs_path             = ".",
+                           obsfile_template     = harpSpatial_hira_conf$obsfile_template,
+                           fcst_model           = harpSpatial_hira_conf$fcst_model,
                            fc_file_path         = harpSpatial_hira_conf$fc_file_path, # "",
                            fc_file_template     = harpSpatial_hira_conf$fc_file_template, #"",
                            fc_file_format       = harpSpatial_hira_conf$fc_file_format, #"fa",
@@ -112,7 +94,7 @@ verify_hira <- function(dttm,
                            return_data          = FALSE) {
 
   # In this script I assume that the observations are ready to be used 
-  
+  members <- NULL 
   # TODO: we may need more options! masked interpolation, options by score,
   prm <- harpIO::parse_harp_parameter(parameter)
 
@@ -136,7 +118,11 @@ verify_hira <- function(dttm,
   if (missing(dttm)) {
       stop("`dttm` is not passed.")
   }
-
+  # fix scores 
+  if(!is.null(scores)) {
+    scores <- sapply(scores, function (x)  paste0("hira_",x)) 
+  }
+  
   # convert lead_time to seconds and remove lead_times smaller than accum
   # we don't have 3h precip at 0h forecast.
   # also, we probably want lead_time in steps of the accumulation
@@ -204,7 +190,7 @@ verify_hira <- function(dttm,
                dttm                = all_ob_dates,
                parameter           = parameter,
                obs_path            = obs_path,
-               obsfile_template    = "obstable",
+               obsfile_template    = obsfile_template,
                gross_error_check   = TRUE,
                stations            = reduced_selected_stations$SID)
 			   

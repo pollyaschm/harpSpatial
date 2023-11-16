@@ -73,7 +73,7 @@ NumericVector scales, NumericVector strategies) {
   
   bool is_multi_event = false; // 0
   bool is_pragmatic = false; // 1 
-  bool is_pph = false; // 2 Practically Perfext Hindcast
+  bool is_pph = false; // 2 Practically Perfect Hindcast
   bool is_csrr = false; // 3 Conditional square root for RPS
   
   for (int is = 0; is < nstrat; is++) {

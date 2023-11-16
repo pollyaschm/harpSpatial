@@ -14,7 +14,7 @@ fc_accumulation      = NULL
 
 # OBS
 ob_file_path         = ""
-ob_file_template     = ""
+obsfile_template     = "obstable"
 ob_file_format       = NULL
 ob_file_opts         = list()
 ob_domain            = NULL
