@@ -11,9 +11,9 @@ hira_scores <- function(score = NULL, execute = NULL, ...) {
   # FIXME: you MUST indicate the primary fields (e.g. threshold & scale) !
   # the index here should be comatible with the strategies.
   score_list <- list(
-                     "hira_bias"   = list(index = -1, fields = c("bias", "count"), func = "scores_hira_basic"),
-                     "hira_mse"    = list(index = -1, fields = c("mse", "count"),  func = "scores_hira_basic"),
-                     "hira_mae"    = list(index = -1, fields = c("mae", "count"),  func = "scores_hira_basic"),
+                     "hira_bias"   = list(index =  4, fields = c("bias", "count"), primary = c("scale"), func = "scores_hira"),
+                     "hira_mse"    = list(index =  4, fields = c("mse", "count"),  primary = c("scale"), func = "scores_hira"),
+                     "hira_mae"    = list(index =  4, fields = c("mae", "count"),  primary = c("scale"), func = "scores_hira"),
                      "hira_me"     = list(index =  0, fields = c("hit", "fa", "miss", "cr"), primary = c("threshold", "scale"), func = "scores_hira"),
                      "hira_pragm"  = list(index =  1, fields = c("bss","bs"), primary = c("threshold", "scale"), func = "scores_hira"),
                      "hira_crss"   = list(index =  2, fields = c("prs","px"), primary = c("threshold", "scale"), func = "scores_hira"),
