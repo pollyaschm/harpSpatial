@@ -14,12 +14,98 @@ float TS(float a, float b, float c) {
 }
 
 // [[Rcpp::export]]
-Rcpp::List hira_hira(NumericVector obsvect, NumericMatrix indices, NumericMatrix fcfield,NumericVector thresholds,
-NumericVector scales, NumericVector strategies) {
-	   
-	   Rcout << "dims: " << strategies.length();
-	   return NULL;
+Rcpp::List get_hira_basic_scores(NumericVector obsvect, NumericMatrix indices, NumericMatrix fcfield,
+           NumericVector scales) {
+    
+	// indices is Nx2 matrix the location of the grid point in the model passed grid.
+    // indices(0,:) is the first index and indices(1,:) is the second index of fcfield which represents the model grid.
+    
+    
+    int n_scales = scales.length();
+    int ni = fcfield.nrow(), nj = fcfield.ncol();
+    int no = obsvect.length();
+    
+    
+    
+    NumericMatrix cum_fc(ni, nj);
+    NumericVector sum_fc(no);
+    
+    //Rcout << "dims: " << cum_bin_fc.nrow() << " " << cum_bin_fc.ncol() << "\n";
+    
+    
+    
+    // numeric vectors for the result
+    NumericVector res_basic_size(n_scales);
+    
+    
+    
+    // Basic
+    NumericVector res_basic_bias(n_scales);
+    NumericVector res_basic_mae(n_scales);
+    NumericVector res_basic_mse(n_scales);
+    NumericVector res_basic_count(n_scales);
+  
+
+
+	cum_fc = cumsum2d(fcfield);  
+
+
+    int k = 0;
+
+    for (int sc = 0; sc < n_scales; sc++) {
+       
+        
+         
+         int rad = (int) scales[sc];
+         float norm = 1./((2 * rad + 1) * (2 * rad + 1)); 
+	     
+  
+  
+ 
+        //Rcout << "dims: " << n_scales << " " << k;
+        res_basic_size(k) = scales(sc);
+        sum_fc = window_sum_from_cumsum_for_ij(cum_fc, rad, indices); 
+        
+        
+        res_basic_count[k] = no;
+        res_basic_bias[k] = 0;
+        res_basic_mae[k] = 0;
+        res_basic_mse[k] = 0;
+        
+        for (int j = 0; j < no; j++) {
+           float ff = sum_fc[j]*norm;
+           res_basic_bias[k] += obsvect[j] - ff;
+           res_basic_mae[k]  += abs(obsvect[j] - ff);
+           res_basic_mse[k]  += (obsvect[j] - ff)*(obsvect[j] - ff);
+         
+        }
+        res_basic_bias[k] /= no;  
+        res_basic_mae[k]  /= no;   
+        res_basic_mse[k]  /= no;   
+	    
+        k++; 
+	     
+    } // sc
+
+
+  
+    Rcpp::List resultList;
+   
+	Rcpp::DataFrame df = Rcpp::DataFrame::create(Named("scale") = res_basic_size);
+												 
+    df["count"] = res_basic_count;
+    df["bias"]  = res_basic_bias;
+    df["mae"]   = res_basic_mae;
+    df["mse"]   = res_basic_mse;
+	
+	resultList["hira_basic"] = df;
+	
+
+  
+  
+  return resultList; 
 }
+
 
 // [[Rcpp::export]]
 Rcpp::List get_hira_scores(NumericVector obsvect, NumericMatrix indices, NumericMatrix fcfield,NumericVector thresholds,
@@ -42,8 +128,8 @@ NumericVector scales, NumericVector strategies) {
   NumericMatrix cum_bin_ob(ni, nj);
   NumericMatrix obsongrid(ni, nj); 
   
-  NumericMatrix cum_fc(ni, nj);
-  NumericVector sum_fc(no);
+  //NumericMatrix cum_fc(ni, nj);
+  //NumericVector sum_fc(no);
  
   //Rcout << "dims: " << cum_bin_fc.nrow() << " " << cum_bin_fc.ncol() << "\n";
 
@@ -52,7 +138,7 @@ NumericVector scales, NumericVector strategies) {
   // numeric vectors for the result
   NumericVector res_thresh(n_thresholds * n_scales);
   NumericVector res_size(n_thresholds * n_scales);
-  NumericVector res_basic_size(n_scales);
+  //NumericVector res_basic_size(n_scales);
   
   // Multi Event
   NumericVector res_me_a(n_thresholds * n_scales);
@@ -71,10 +157,10 @@ NumericVector scales, NumericVector strategies) {
   NumericVector res_td_d(n_thresholds * n_scales);
   
   // Basic
-  NumericVector res_basic_bias(n_scales);
-  NumericVector res_basic_mae(n_scales);
-  NumericVector res_basic_mse(n_scales);
-  NumericVector res_basic_count(n_scales);
+  //NumericVector res_basic_bias(n_scales);
+  //NumericVector res_basic_mae(n_scales);
+  //NumericVector res_basic_mse(n_scales);
+  //NumericVector res_basic_count(n_scales);
   
   
   // NumericMatrix res_cdf(n_thresholds , n_scales);
@@ -87,7 +173,7 @@ NumericVector scales, NumericVector strategies) {
   bool is_pragmatic = false; // 1 
   bool is_pph = false; // 2 Practically Perfect Hindcast
   bool is_csrr = false; // 3 Conditional square root for RPS
-  bool is_basic = false; // 4 basic scores, bias, mse , mae 
+  //bool is_basic = false; // 4 basic scores, bias, mse , mae 
   
   for (int is = 0; is < nstrat; is++) {
     int stra = (int) strategies(is);
@@ -95,28 +181,32 @@ NumericVector scales, NumericVector strategies) {
     switch (stra) {
     case 0:
       is_multi_event = true;
+	  Rcout << "\nstra: me";
       break;
     case 1:
       // Pragmatic Stratigy
       is_pragmatic = true;
+	  Rcout << "\nstra: prag\n";
       break;
     case 2:
       is_pph = true;
+	  Rcout << "\nstra: pph\n";
       break;
     case 3:
       is_csrr = true;
+	  Rcout << "\nstra: csrr\n";
       break;
-    case 4:
-      is_basic = true;
-      break;
+    //case 4:
+    //  is_basic = true;
+    //  break;
       //default:
       // code block
     }
   }
   
-  if (is_basic) {
-	cum_fc = cumsum2d(fcfield);  
-  }
+  //if (is_basic) {
+  //cum_fc = cumsum2d(fcfield);  
+  //}
      
   if (is_pph) {
     for (int j=0 ; j < nj ; j++) {
@@ -130,8 +220,8 @@ NumericVector scales, NumericVector strategies) {
     
   }
   
-  bool basic_is_done = ~is_basic; 
-  Rcout << "dims: basic_is_done " << basic_is_done;
+  //bool basic_is_done = ~is_basic; 
+  //Rcout << "dims: basic_is_done " << basic_is_done;
   int k = 0;
   for (int th = 0; th < n_thresholds; th++) {
     
@@ -157,28 +247,28 @@ NumericVector scales, NumericVector strategies) {
 	     sum_bin_ob = window_sum_from_cumsum_for_ij(cum_bin_ob, rad, indices);
       }
 	  
-      if (~basic_is_done) {
-		  Rcout << "dims: " << n_scales << " " << k;
-		  res_basic_size(k) = scales(sc);
-		  sum_fc = window_sum_from_cumsum_for_ij(cum_fc, rad, indices); 
-		  
-		  
-          res_basic_count[k] = no;
-          res_basic_bias[k] = 0;
-          res_basic_mae[k] = 0;
-          res_basic_mse[k] = 0;
-		
-		  for (int j = 0; j < no; j++) {
-		     float ff = sum_fc[j]*norm;
-             res_basic_bias[k] += obsvect[j] - ff;
-             res_basic_mae[k]  += abs(obsvect[j] - ff);
-             res_basic_mse[k]  += (obsvect[j] - ff)*(obsvect[j] - ff);
-			 
-		  }
-		  res_basic_bias[k] /= no;  
-		  res_basic_mae[k]  /= no;   
-		  res_basic_mse[k]  /= no;   
-	  }
+      //if (~basic_is_done) {
+	  //  Rcout << "dims: " << n_scales << " " << k;
+	  //  res_basic_size(k) = scales(sc);
+	  //  sum_fc = window_sum_from_cumsum_for_ij(cum_fc, rad, indices); 
+	  //  
+	  //  
+      //    res_basic_count[k] = no;
+      //    res_basic_bias[k] = 0;
+      //    res_basic_mae[k] = 0;
+      //    res_basic_mse[k] = 0;
+	  //
+	  //  for (int j = 0; j < no; j++) {
+	  //     float ff = sum_fc[j]*norm;
+      //       res_basic_bias[k] += obsvect[j] - ff;
+      //       res_basic_mae[k]  += abs(obsvect[j] - ff);
+      //       res_basic_mse[k]  += (obsvect[j] - ff)*(obsvect[j] - ff);
+	  //	 
+	  //  }
+	  //  res_basic_bias[k] /= no;  
+	  //  res_basic_mae[k]  /= no;   
+	  //  res_basic_mse[k]  /= no;   
+	  //}
 	  
       if (is_multi_event) {
         res_me_a[k] = 0;
@@ -261,7 +351,7 @@ NumericVector scales, NumericVector strategies) {
       k++; 
 	  
     } // sc
-	basic_is_done = true;
+	//basic_is_done = true;
   } // th
   
    Rcpp::List resultList;
@@ -275,7 +365,7 @@ NumericVector scales, NumericVector strategies) {
     df["miss"] = res_me_c;
     df["cr"] = res_me_d;
 	
-	resultList["me"] = df;
+	resultList["hira_me"] = df;
   }
   if (is_pragmatic) {
 	  
@@ -283,7 +373,7 @@ NumericVector scales, NumericVector strategies) {
                                                  Named("scale") = res_size);
     df["bss"] = res_pra_bss;
     df["bs"] = res_pra_bs;
-	resultList["pragm"] = df;
+	resultList["hira_pragm"] = df;
   }
   
   if (is_csrr) {
@@ -294,7 +384,7 @@ NumericVector scales, NumericVector strategies) {
     df["prs"] = res_csrr_pre_prs;
     df["px"] = res_csrr_pre_px;
 	
-	resultList["csrr"] = df;
+	resultList["hira_csrr"] = df;
 	
   }
   
@@ -307,21 +397,21 @@ NumericVector scales, NumericVector strategies) {
     df["miss"] = res_td_c;
     df["cr"] = res_td_d;
 	
-	resultList["pph"] = df;
+	resultList["hira_pph"] = df;
 	
   }
 
-  if (is_basic) {
-	Rcpp::DataFrame df = Rcpp::DataFrame::create(Named("scale") = res_basic_size);
-												 
-    df["count"] = res_basic_count;
-    df["bias"]  = res_basic_bias;
-    df["mae"]   = res_basic_mae;
-    df["mse"]   = res_basic_mse;
-	
-	resultList["basic"] = df;
-	
-  }
+    //if (is_basic) {
+	//  Rcpp::DataFrame df = Rcpp::DataFrame::create(Named("scale") = res_basic_size);
+	//  											 
+    //  df["count"] = res_basic_count;
+    //  df["bias"]  = res_basic_bias;
+    //  df["mae"]   = res_basic_mae;
+    //  df["mse"]   = res_basic_mse;
+	//  
+	//  resultList["basic"] = df;
+	//  
+    //}
   
   
   return resultList; 

@@ -395,7 +395,11 @@ verify_hira <- function(dttm,
 	     temp_obs_fcst <- obsvect_full %>% select(obs,i,j) %>% drop_na()
 		 final_obs <-  temp_obs_fcst$obs 
 		 final_fcst <-  NULL 
-	  } 
+	  }
+
+      if (nrow(temp_obs_fcst) == 0) {
+	     next
+      }	  
       temp_indices <- temp_obs_fcst %>% select(i,j)
 	  final_indices <- matrix(unlist(temp_indices), nrow = length(temp_indices), byrow = TRUE)
 
@@ -424,9 +428,11 @@ verify_hira <- function(dttm,
                          scales = window_sizes, strategies = hira_strategies, execute = TRUE ) # TODO: fill correct stratigies from scores 
         message("--> Calling ", sf)
         multiscore_list <- do.call(sf, myargs)
-
+        print(multiscore_list)
+		print(score_function_subset)
         if (!is.null(multiscore_list)) {
-	
+	    
+		
 		for (msl in names(multiscore_list)) {
 		    multiscore <- as_tibble(multiscore_list[[msl]])
 
