@@ -5,8 +5,12 @@ harpSpatial_basic_scores <- function(obfield, fcfield) {
     .Call('_harpSpatial_harpSpatial_basic_scores', PACKAGE = 'harpSpatial', obfield, fcfield)
 }
 
-hira_scores_ <- function(obvect, indices, fcfield, thresholds, scales, stratigies) {
-    .Call('_harpSpatial_hira_scores_', PACKAGE = 'harpSpatial', obvect, indices, fcfield, thresholds, scales, stratigies)
+get_hira_basic_scores <- function(obsvect, indices, fcfield, scales) {
+    .Call('_harpSpatial_get_hira_basic_scores', PACKAGE = 'harpSpatial', obsvect, indices, fcfield, scales)
+}
+
+get_hira_scores <- function(obsvect, indices, fcfield, thresholds, scales, strategies) {
+    .Call('_harpSpatial_get_hira_scores', PACKAGE = 'harpSpatial', obsvect, indices, fcfield, thresholds, scales, strategies)
 }
 
 #' @export

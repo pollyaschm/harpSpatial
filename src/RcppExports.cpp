@@ -22,19 +22,33 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// hira_scores_
-DataFrame hira_scores_(NumericVector obvect, NumericMatrix indices, NumericMatrix fcfield, NumericVector thresholds, NumericVector scales, NumericVector stratigies);
-RcppExport SEXP _harpSpatial_hira_scores_(SEXP obvectSEXP, SEXP indicesSEXP, SEXP fcfieldSEXP, SEXP thresholdsSEXP, SEXP scalesSEXP, SEXP stratigiesSEXP) {
+// get_hira_basic_scores
+Rcpp::List get_hira_basic_scores(NumericVector obsvect, NumericMatrix indices, NumericMatrix fcfield, NumericVector scales);
+RcppExport SEXP _harpSpatial_get_hira_basic_scores(SEXP obsvectSEXP, SEXP indicesSEXP, SEXP fcfieldSEXP, SEXP scalesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type obvect(obvectSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type obsvect(obsvectSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type indices(indicesSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type fcfield(fcfieldSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type scales(scalesSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_hira_basic_scores(obsvect, indices, fcfield, scales));
+    return rcpp_result_gen;
+END_RCPP
+}
+// get_hira_scores
+Rcpp::List get_hira_scores(NumericVector obsvect, NumericMatrix indices, NumericMatrix fcfield, NumericVector thresholds, NumericVector scales, NumericVector strategies);
+RcppExport SEXP _harpSpatial_get_hira_scores(SEXP obsvectSEXP, SEXP indicesSEXP, SEXP fcfieldSEXP, SEXP thresholdsSEXP, SEXP scalesSEXP, SEXP strategiesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type obsvect(obsvectSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type indices(indicesSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type fcfield(fcfieldSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type thresholds(thresholdsSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type scales(scalesSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type stratigies(stratigiesSEXP);
-    rcpp_result_gen = Rcpp::wrap(hira_scores_(obvect, indices, fcfield, thresholds, scales, stratigies));
+    Rcpp::traits::input_parameter< NumericVector >::type strategies(strategiesSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_hira_scores(obsvect, indices, fcfield, thresholds, scales, strategies));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -208,7 +222,8 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_harpSpatial_harpSpatial_basic_scores", (DL_FUNC) &_harpSpatial_harpSpatial_basic_scores, 2},
-    {"_harpSpatial_hira_scores_", (DL_FUNC) &_harpSpatial_hira_scores_, 6},
+    {"_harpSpatial_get_hira_basic_scores", (DL_FUNC) &_harpSpatial_get_hira_basic_scores, 4},
+    {"_harpSpatial_get_hira_scores", (DL_FUNC) &_harpSpatial_get_hira_scores, 6},
     {"_harpSpatial_sal_identify_objects", (DL_FUNC) &_harpSpatial_sal_identify_objects, 3},
     {"_harpSpatial_cumsum2d", (DL_FUNC) &_harpSpatial_cumsum2d, 1},
     {"_harpSpatial_cumsum2d_bin", (DL_FUNC) &_harpSpatial_cumsum2d_bin, 2},

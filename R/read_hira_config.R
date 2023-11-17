@@ -1,6 +1,6 @@
 # Configuration file management
 
-#' Read local harpSpatial configuration files
+#' Read local harpSpatial configuration files for HiRA
 #' @param config_file The name of the config file to be read.
 #'   If NULL, the current configuration is printed.
 #' @export

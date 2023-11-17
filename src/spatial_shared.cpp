@@ -94,7 +94,7 @@ LogicalVector vector_to_bin(NumericVector indat, float threshold) {
 // [[Rcpp::export]]
 NumericVector window_sum_from_cumsum_for_ij(NumericMatrix indat, int rad, NumericMatrix indices) {
 	
-	Rcout << "dims2: " << indat.nrow() << " " << indat.ncol() << "\n";
+  //Rcout << "dims2: " << indat.nrow() << " " << indat.ncol() << "\n";
   // windowed average
   // input matrix is output from cumsum2d[_bin]
   // rad is an integer (>=0), window size is 2*rad+1
