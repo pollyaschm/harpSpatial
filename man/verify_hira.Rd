@@ -9,12 +9,11 @@ verify_hira(
   parameter,
   lead_time = harpSpatial_hira_conf$lead_time,
   lt_unit = harpSpatial_hira_conf$lt_unit,
-  stations = harpCore::station_list,
-  padding_i = 5,
-  padding_j = 5,
-  scores = NULL,
-  interp_method = "nearest",
-  obs_path = ".",
+  stations = harpSpatial_hira_conf$stations,
+  padding_i = harpSpatial_hira_conf$padding_i,
+  padding_j = harpSpatial_hira_conf$padding_j,
+  scores = harpSpatial_hira_conf$scores,
+  obs_path = harpSpatial_hira_conf$obs_path,
   obsfile_template = harpSpatial_hira_conf$obsfile_template,
   fcst_model = harpSpatial_hira_conf$fcst_model,
   fc_file_path = harpSpatial_hira_conf$fc_file_path,
@@ -49,16 +48,15 @@ this is full list from harpCore::station_list, the stations outside the domain i
 
 \item{padding_j}{Number of grid points to define the domain interior in the y direction.}
 
-\item{scores}{HiRA HiRA and basic scores
-me:    Multi Event
-pragm: Pragramtic 
-crss:  Conditional Square Root RPS
-pph:   Theat Detection
-bias:  Bias 
-mse:   Mean Squared Error  
-mae:   Mean Absolute Error}
-
-\item{interp_method}{interpolation method from model grid}
+\item{scores}{HiRA and basic scores
+ me:    Multi Event
+ pragm: Pragramtic
+ csrr:  Conditional Square Root RPS
+ td:    Theate Detection (not published yet)
+ bias:  Bias from area mean.
+ mse:   Mean Squared Error from area mean.
+ mae:   Mean Absolute Error from area mean.
+if NULL then all available scores will be calculated.}
 
 \item{obs_path}{Path to the observation files}
 

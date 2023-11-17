@@ -12,14 +12,15 @@
 #'   this is full list from harpCore::station_list, the stations outside the domain interior will be excluded.
 #' @param padding_i Number of grid points to define the domain interior in the x direction.
 #' @param padding_j Number of grid points to define the domain interior in the y direction.
-#' @param HiRA and basic scores
+#' @param scores HiRA and basic scores
 #'   me:    Multi Event
 #'   pragm: Pragramtic
-#'   crss:  Conditional Square Root RPS
-#'   td:    Theate Detection (modified)
+#'   csrr:  Conditional Square Root RPS
+#'   td:    Theate Detection (not published yet)
 #'   bias:  Bias from area mean.
 #'   mse:   Mean Squared Error from area mean.
 #'   mae:   Mean Absolute Error from area mean.
+#'  if NULL then all available scores will be calculated.
 #' @param obs_path Path to the observation files
 #' @param obsfile_template Template of observation files.
 #' @param fcst_model The name of the (deterministic or EPS) model.
@@ -65,7 +66,7 @@ verify_hira <- function(dttm,
 #                           members              = harpSpatial_hira_conf$members, #NULL,
 #                           members_out          = members,
 #                           lags                 = harpSpatial_hira_conf$lags, #NULL,
-                           obs_path             = harpSpatial_hira_conf$obs_path,,
+                           obs_path             = harpSpatial_hira_conf$obs_path,
                            obsfile_template     = harpSpatial_hira_conf$obsfile_template,
                            fcst_model           = harpSpatial_hira_conf$fcst_model,
                            fc_file_path         = harpSpatial_hira_conf$fc_file_path, # "",
@@ -115,11 +116,23 @@ verify_hira <- function(dttm,
   if (missing(dttm)) {
       stop("`dttm` is not passed.")
   }
-  # fix scores
-  if(!is.null(scores)) {
+  # check scores 
+  all_scores <- names(hira_scores())
+  
+  if (is.null(scores)) {
+    scores <- all_scores
+  } else 
+  {
+    all_scores <- sub("^hira_", "", all_scores)
+	if  (!all(scores %in% all_scores)) {
+	   not_supported <- scores[!(scores %in% all_scores)]
+	   stop(paste("The following scores are not supprted: ", 
+             paste(not_supported, collapse = ", ")))
+	}
+	
     scores <- sapply(scores, function (x)  paste0("hira_",x))
   }
-
+  
   # convert lead_time to seconds and remove lead_times smaller than accum
   # we don't have 3h precip at 0h forecast.
   # also, we probably want lead_time in steps of the accumulation
@@ -174,6 +187,9 @@ verify_hira <- function(dttm,
         .selected_stations <- station_with_indices %>%
           drop_na()
 
+        if ( is.null(.selected_stations) || nrow(.selected_stations) == 0 ) {
+		    stop("No stations found inside the domain.")
+		} 
         # Go away from the boundaries
         .selected_stations <- .selected_stations %>%
             filter(i + padding_i <= domain$nx, j + padding_j <= domain$ny) %>% arrange(SID)
@@ -205,9 +221,7 @@ verify_hira <- function(dttm,
     }
 
 
-    #  consider interpolation for basic scores
-
-
+ 
 
 
 
@@ -268,11 +282,13 @@ verify_hira <- function(dttm,
   ncases <- length(dttm) * length(lead_time)
   message("expected ncases= ", ncases)
 
-  if (is.null(scores)) {
-    score_list <- hira_scores()
-  } else {
-    score_list <- hira_scores()[scores]
-  }
+ 
+  
+  
+
+ 
+  score_list <- hira_scores()[scores]
+
 #  score_templates <- lapply(names(score_list), function(sc) hira_scores(score = sc))
 #  names(score_templates) <- score_list
 
@@ -284,7 +300,7 @@ verify_hira <- function(dttm,
   # we don't want to call them twice...
   score_function_list <- unique(sapply(score_list, function(x) x$func))
   # And conversely, for every such "multiscore", we need the list of scores that depend on it
-  score_function_subset <- as_tibble(sapply(score_function_list, function(msc)
+  score_function_subset <- as.list(sapply(score_function_list, function(msc)
                                   names(which(sapply(score_list, function(x) x$func == msc )))))
 
   hira_strategies <- unique(sapply(score_list, function(x) x$index))
@@ -378,26 +394,15 @@ verify_hira <- function(dttm,
 
 
       # find forecast vector for basic scores
-      final_obs <- NULL
-      final_fcst <- NULL
-      temp_obs_fcst <- NULL
-      #if (do_basic_scores){
-      #   fcvect <- meteogrid::point.interp(fcfield, weights = interp_weights)
-      #   fcvect <- as_tibble(list( fcst =fcvect, SID = selected_station_ids$SID ))
-      #   temp_obs_fcst <- left_join(obsvect_full,fcvect, by="SID") %>% drop_na()
-      # final_obs <-  temp_obs_fcst$obs
-      # final_fcst <-  temp_obs_fcst$fcst
-      #
-      #} else {
-         temp_obs_fcst <- obsvect_full %>% select(obs,i,j) %>% drop_na()
-         final_obs <-  temp_obs_fcst$obs
-         final_fcst <-  NULL
-      }
+ 
+ 
 
-      if (nrow(temp_obs_fcst) == 0) {
+      final_obs <- obsvect_full %>% select(obs,i,j) %>% drop_na()
+	  
+      if (nrow(final_obs) == 0) {
          next
       }
-      temp_indices <- temp_obs_fcst %>% select(i,j)
+      temp_indices <- final_obs %>% select(i,j)
       final_indices <- matrix(unlist(temp_indices), nrow = length(temp_indices), byrow = TRUE)
 
       #############################
@@ -420,7 +425,7 @@ verify_hira <- function(dttm,
         #print(is.vector(thresholds))
         #print(is.vector(window_sizes))
         #print(is.vector(hira_strategies))
-        myargs <- list(obsvect=final_obs, fcvect = final_fcst,  indices = final_indices, fcfield=fcfield,
+        myargs <- list(obsvect=final_obs$obs ,  indices = final_indices, fcfield=fcfield,
                          thresholds = thresholds,
                          scales = window_sizes, strategies = hira_strategies, execute = TRUE ) # TODO: fill correct stratigies from scores
         message("--> Calling ", sf)
@@ -483,8 +488,8 @@ verify_hira <- function(dttm,
     save_spatial_verif(score_tables, sqlite_path, sqlite_file)
   }
 
-  if (return_data) invisible(score_tables)
-  else invisible(NULL)
+  if (return_data) { invisible(score_tables) }
+  else { invisible(NULL) } 
 }
 
 #' Save spatial scores to SQLite

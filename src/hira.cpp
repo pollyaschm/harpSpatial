@@ -241,7 +241,7 @@ NumericVector scales, NumericVector strategies) {
 	if (is_td) {
       cum_bin_ob = cumsum2d_bin(obsongrid, thresholds[th]);
     }
-      
+     
     for (int sc = 0; sc < n_scales; sc++) {
        
       res_thresh(k) = thresholds(th);
@@ -334,10 +334,8 @@ NumericVector scales, NumericVector strategies) {
         res_td_c[k] = 0;
         res_td_d[k] = 0;
         for(int iob=0; iob<no;iob++){
-          int i = indices(iob,0);
-          int j = indices(iob,1);
-          int co = sum_bin_ob(i,j);
-          int cf = sum_bin_fc(i,j);
+          int co = sum_bin_ob(iob);
+          int cf = sum_bin_fc(iob);
           res_td_a[k] += (int) (co > 0 && cf >= co);  
           res_td_b[k] += (int) (co == 0 && cf !=0);
           res_td_c[k] += (int) (co > 0 && cf < co);
