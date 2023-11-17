@@ -17,7 +17,7 @@ hira_scores <- function(score = NULL, execute = NULL, ...) {
                      "hira_me"     = list(index =  0, fields = c("hit", "fa", "miss", "cr"), primary = c("threshold", "scale", "count"), func = "scores_hira"),
                      "hira_pragm"  = list(index =  1, fields = c("bss","bs"), primary = c("threshold", "scale", "count"), func = "scores_hira"),
                      "hira_crss"   = list(index =  2, fields = c("prs","px"), primary = c("threshold", "scale"), func = "scores_hira"),
-					 "hira_pph"    = list(index =  3, fields = c("hit", "fa", "miss", "cr"), primary = c("threshold", "scale", "count"), func = "scores_hira")
+					 "hira_td"     = list(index =  3, fields = c("hit", "fa", "miss", "cr"), primary = c("threshold", "scale", "count"), func = "scores_hira")
                      )
 
 

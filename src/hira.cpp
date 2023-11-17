@@ -181,7 +181,7 @@ NumericVector scales, NumericVector strategies) {
   
   bool is_multi_event = false; // 0
   bool is_pragmatic = false; // 1 
-  bool is_pph = false; // 2 Practically Perfect Hindcast
+  bool is_td = false; // 2 Practically Perfect Hindcast
   bool is_csrr = false; // 3 Conditional square root for RPS
   //bool is_basic = false; // 4 basic scores, bias, mse , mae 
   
@@ -199,8 +199,8 @@ NumericVector scales, NumericVector strategies) {
 	  Rcout << "\nstra: prag\n";
       break;
     case 2:
-      is_pph = true;
-	  Rcout << "\nstra: pph\n";
+      is_td = true;
+	  Rcout << "\nstra: td\n";
       break;
     case 3:
       is_csrr = true;
@@ -218,7 +218,7 @@ NumericVector scales, NumericVector strategies) {
   //cum_fc = cumsum2d(fcfield);  
   //}
      
-  if (is_pph) {
+  if (is_td) {
     for (int j=0 ; j < nj ; j++) {
       for (int i=0 ; i < ni ; i++) {
         obsongrid(i,j) = 0;
@@ -238,7 +238,7 @@ NumericVector scales, NumericVector strategies) {
     bin_ob = vector_to_bin(obsvect, thresholds[th]);
     cum_bin_fc = cumsum2d_bin(fcfield, thresholds[th]);
     
-	if (is_pph) {
+	if (is_td) {
       cum_bin_ob = cumsum2d_bin(obsongrid, thresholds[th]);
     }
       
@@ -253,7 +253,7 @@ NumericVector scales, NumericVector strategies) {
   
       sum_bin_fc = window_sum_from_cumsum_for_ij(cum_bin_fc, rad, indices);
 	  
-	  if (is_pph) {
+	  if (is_td) {
 	     sum_bin_ob = window_sum_from_cumsum_for_ij(cum_bin_ob, rad, indices);
       }
 	  
@@ -323,7 +323,7 @@ NumericVector scales, NumericVector strategies) {
         
       }
       
-      if (is_pph) {
+      if (is_td) {
         // Practically Perfect hindcast
         // Here I implement a slightly modified method.
         // Look for all grid points that fall in the same neighborhood of some scale.
@@ -409,7 +409,7 @@ NumericVector scales, NumericVector strategies) {
 	
   }
   
-  if (is_pph) {
+  if (is_td) {
 	Rcpp::DataFrame df = Rcpp::DataFrame::create(Named("threshold") = res_thresh,
                                                  Named("scale") = res_size,
                                                  Named("count") = res_count);
@@ -419,7 +419,7 @@ NumericVector scales, NumericVector strategies) {
     df["miss"] = res_td_c;
     df["cr"] = res_td_d;
 	
-	resultList["hira_pph"] = df;
+	resultList["hira_td"] = df;
 	
   }
 
