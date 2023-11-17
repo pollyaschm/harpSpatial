@@ -287,9 +287,9 @@ verify_hira <- function(dttm,
   # we don't want to call them twice...
   score_function_list <- unique(sapply(score_list, function(x) x$func))
   # And conversely, for every such "multiscore", we need the list of scores that depend on it
-  score_function_subset <- sapply(score_function_list, function(msc)
-                                  names(which(sapply(score_list, function(x) x$func == msc ))))
-								  
+  score_function_subset <- as_tibble(sapply(score_function_list, function(msc)
+                                  names(which(sapply(score_list, function(x) x$func == msc )))))
+ 
   hira_strategies <- unique(sapply(score_list, function(x) x$index))   
   hira_strategies <- as.vector(hira_strategies[ hira_strategies >-1 ])
   
@@ -399,7 +399,7 @@ verify_hira <- function(dttm,
 
       if (nrow(temp_obs_fcst) == 0) {
 	     next
-      }	  
+      }	 									 
       temp_indices <- temp_obs_fcst %>% select(i,j)
 	  final_indices <- matrix(unlist(temp_indices), nrow = length(temp_indices), byrow = TRUE)
 
@@ -409,6 +409,7 @@ verify_hira <- function(dttm,
 
       # FIXME: Some scores (e.g. SAL) have various other parameters that we can't pass yet...
       #        While others don't need any
+ 
       for (sf in score_function_list) {
         # get the required arguments for this function
         # NOTE: args() only works if the function is found
@@ -422,20 +423,23 @@ verify_hira <- function(dttm,
 		#print(is.vector(thresholds))
 		#print(is.vector(window_sizes))
 		#print(is.vector(hira_strategies))
-		
 		myargs <- list(obsvect=final_obs, fcvect = final_fcst,  indices = final_indices, fcfield=fcfield,
                          thresholds = thresholds,
                          scales = window_sizes, strategies = hira_strategies, execute = TRUE ) # TODO: fill correct stratigies from scores 
         message("--> Calling ", sf)
         multiscore_list <- do.call(sf, myargs)
-        print(multiscore_list)
-		print(score_function_subset)
-        if (!is.null(multiscore_list)) {
-	    
-		
-		for (msl in names(multiscore_list)) {
-		    multiscore <- as_tibble(multiscore_list[[msl]])
 
+		   
+									
+		
+        if (!is.null(multiscore_list)) {
+	
+		
+            for (sn in score_function_subset[[sf]]) {
+
+		    multiscore <- as_tibble(multiscore_list[[sn]])
+			 
+			
             # nrows per case for this score
             message("output dim : ", paste(dim(multiscore), collapse="x"))
 			
@@ -444,7 +448,6 @@ verify_hira <- function(dttm,
             nrow <- dim(multiscore)[1]
             # interval of rows for this case in full score table
             intv <- seq_len(nrow) + (case - 1) * nrow
-            for (sn in score_function_subset[[sf]]) {
               message("-----> Calling score ", sn)
               sc <- multiscore[,c(score_list[[sn]]$primary, score_list[[sn]]$fields)]
               if (is.null(score_tables[[sn]])) {
@@ -467,7 +470,7 @@ verify_hira <- function(dttm,
               score_tables[[sn]][intv, names(sc)] <- sc
             }
 		  }
-        }
+        #}
       }
 
       case <- case + 1

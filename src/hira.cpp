@@ -91,16 +91,24 @@ Rcpp::List get_hira_basic_scores(NumericVector obsvect, NumericMatrix indices, N
   
     Rcpp::List resultList;
    
-	Rcpp::DataFrame df = Rcpp::DataFrame::create(Named("scale") = res_basic_size);
-												 
-    df["count"] = res_basic_count;
-    df["bias"]  = res_basic_bias;
-    df["mae"]   = res_basic_mae;
-    df["mse"]   = res_basic_mse;
+	Rcpp::DataFrame df = Rcpp::DataFrame::create(
+	  Named("scale") = res_basic_size, 
+	  Named("count") = res_basic_count,
+	  Named("bias") =  res_basic_bias);
+      resultList["hira_bias"] = df;
+										 
+    df = Rcpp::DataFrame::create(
+	  Named("scale") = res_basic_size, 
+	  Named("count") = res_basic_count,
+	  Named("mae") =  res_basic_mae);
+	  resultList["hira_mae"] = df;
 	
-	resultList["hira_basic"] = df;
-	
-
+    df = Rcpp::DataFrame::create(
+	  Named("scale") = res_basic_size, 
+	  Named("count") = res_basic_count,
+	  Named("mse") =  res_basic_mse);
+	  resultList["hira_mse"] = df;
+	  
   
   
   return resultList; 
@@ -120,6 +128,8 @@ NumericVector scales, NumericVector strategies) {
   int no = obsvect.length();
   
   int nstrat = strategies.length(); // Number of Strategies
+  
+  NumericVector res_count(n_thresholds * n_scales);
   
   NumericVector sum_bin_fc(no);
   NumericVector sum_bin_ob(no);
@@ -181,7 +191,7 @@ NumericVector scales, NumericVector strategies) {
     switch (stra) {
     case 0:
       is_multi_event = true;
-	  Rcout << "\nstra: me";
+	  Rcout << "\nstra: me\n";
       break;
     case 1:
       // Pragmatic Stratigy
@@ -220,7 +230,7 @@ NumericVector scales, NumericVector strategies) {
     
   }
   
-  //bool basic_is_done = ~is_basic; 
+  //bool basic_is_done = !is_basic; 
   //Rcout << "dims: basic_is_done " << basic_is_done;
   int k = 0;
   for (int th = 0; th < n_thresholds; th++) {
@@ -247,7 +257,7 @@ NumericVector scales, NumericVector strategies) {
 	     sum_bin_ob = window_sum_from_cumsum_for_ij(cum_bin_ob, rad, indices);
       }
 	  
-      //if (~basic_is_done) {
+      //if (!basic_is_done) {
 	  //  Rcout << "dims: " << n_scales << " " << k;
 	  //  res_basic_size(k) = scales(sc);
 	  //  sum_fc = window_sum_from_cumsum_for_ij(cum_fc, rad, indices); 
@@ -277,14 +287,21 @@ NumericVector scales, NumericVector strategies) {
         for (int j = 0; j < no; j++) {
           //TODO: It could be esier to use only the bitwise operations. the empysise of logical values to is only just to make sure
           bool is_fc = sum_bin_fc[j] > 0;
-          res_me_a[k] += (bin_ob[j]) && (is_fc);
-          res_me_b[k] += (~bin_ob[j]) && (is_fc);
-          res_me_c[k] += (bin_ob[j]) && (~is_fc);
+          bool is_obs = bin_ob[j] > 0;
+		  //Rcout <<"is_fc: " << ((is_fc)) << "\n";
+		  //Rcout <<"bin_ob: " << (is_obs) << "\n";
+		  //Rcout <<"a: " << ((is_obs) && (is_fc)) << "\n";
+		  //Rcout <<"b: " << ((!is_obs) && (is_fc)) << "\n";
+		  //Rcout <<"c: " << ((is_obs) && (!is_fc)) << "\n";
+		  
+          res_me_a[k] += (int)((is_obs) && (is_fc));
+          res_me_b[k] += (int)((!is_obs) && (is_fc));
+          res_me_c[k] += (int)((is_obs) && (!is_fc));
          
         }
          res_me_d[k] = no - res_me_a[k] - res_me_b[k] - res_me_c[k];
       }
-     
+      //Rcpp::stop("Stopping R execution from C++ code");
       if (is_pragmatic) {
         float nume = 0;
         float px_ave = 0;
@@ -321,9 +338,9 @@ NumericVector scales, NumericVector strategies) {
           int j = indices(iob,1);
           int co = sum_bin_ob(i,j);
           int cf = sum_bin_fc(i,j);
-          res_td_a[k] += co > 0 && cf >= co;  
-          res_td_b[k] += co == 0 && cf !=0;
-          res_td_c[k] += co > 0 && cf < co;
+          res_td_a[k] += (int) (co > 0 && cf >= co);  
+          res_td_b[k] += (int) (co == 0 && cf !=0);
+          res_td_c[k] += (int) (co > 0 && cf < co);
         }
 
         res_td_d[k] = no - res_td_a[k] - res_td_b[k] - res_td_c[k];
@@ -348,6 +365,7 @@ NumericVector scales, NumericVector strategies) {
         res_csrr_pre_prs[k] = rps / no; // This quantity should be summed over all thresholds  and divided  over ( number of thresholds -1) to be presented later
         res_csrr_pre_px[k] = res_csrr_pre_px[k] / no;
       }
+	  res_count[k] = no;
       k++; 
 	  
     } // sc
@@ -359,7 +377,8 @@ NumericVector scales, NumericVector strategies) {
 
   if (is_multi_event) {
 	Rcpp::DataFrame df = Rcpp::DataFrame::create(Named("threshold") = res_thresh,
-                                                 Named("scale") = res_size);
+                                                 Named("scale") = res_size,
+                                                 Named("count") = res_count);
     df["hit"] = res_me_a;
     df["fa"] = res_me_b;
     df["miss"] = res_me_c;
@@ -370,7 +389,8 @@ NumericVector scales, NumericVector strategies) {
   if (is_pragmatic) {
 	  
 	Rcpp::DataFrame df = Rcpp::DataFrame::create(Named("threshold") = res_thresh,
-                                                 Named("scale") = res_size);
+                                                 Named("scale") = res_size,
+                                                 Named("count") = res_count);
     df["bss"] = res_pra_bss;
     df["bs"] = res_pra_bs;
 	resultList["hira_pragm"] = df;
@@ -379,7 +399,8 @@ NumericVector scales, NumericVector strategies) {
   if (is_csrr) {
 	  
 	Rcpp::DataFrame df = Rcpp::DataFrame::create(Named("threshold") = res_thresh,
-                                                 Named("scale") = res_size);
+                                                 Named("scale") = res_size,
+                                                 Named("count") = res_count);
 												 
     df["prs"] = res_csrr_pre_prs;
     df["px"] = res_csrr_pre_px;
@@ -390,7 +411,8 @@ NumericVector scales, NumericVector strategies) {
   
   if (is_pph) {
 	Rcpp::DataFrame df = Rcpp::DataFrame::create(Named("threshold") = res_thresh,
-                                                 Named("scale") = res_size);
+                                                 Named("scale") = res_size,
+                                                 Named("count") = res_count);
 												 
     df["hit"] = res_td_a;
     df["fa"] = res_td_b;
