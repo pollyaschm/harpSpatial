@@ -249,10 +249,10 @@ verify_hira <- function(dttm,
         det_model = fcst_model,
         file_path = fc_file_path,
         file_template = fc_file_template)
-      do.call(harpIO::read_grid,
+      try(do.call(harpIO::read_grid,
         c(list(file_name = fcfile, file_format = fc_file_format,
                    parameter = parameter, lead_time = lead_time,
-                       file_format_opts = fc_file_opts)))
+                       file_format_opts = fc_file_opts))))
     }
   } else {
     # for EPS models, we try to get the members into a 3D geogrid array.
@@ -267,24 +267,20 @@ verify_hira <- function(dttm,
         file_path = fc_file_path,
         file_template = fc_file_template)
       if (length(fcfile) == 1) {
-        do.call(harpIO::read_grid,
+        try(do.call(harpIO::read_grid,
                 c(list(file_name = fcfile, file_format = fc_file_format,
                   parameter = parameter, lead_time = lead_time),
-                  fc_file_opts))
+                  fc_file_opts)))
       } else {
-        lapply(fcfile, harpIO::read_grid, file_format = fc_file_format,
+        try(lapply(fcfile, harpIO::read_grid, file_format = fc_file_format,
                 parameter = parameter, lead_time = lead_time, members=members,
-                unlist(fc_file_opts))
+                unlist(fc_file_opts)))
       }
     }
   }
   # We will write to SQL only at the end (more efficient),
   ncases <- length(dttm) * length(lead_time)
   message("expected ncases= ", ncases)
-
- 
-  
-  
 
  
   score_list <- hira_scores()[scores]
@@ -337,8 +333,7 @@ verify_hira <- function(dttm,
 
 
       if (inherits(fcfield, "try-error")) { # e.g. missing forecast run
-        if (harpenv$verbose) message("..... Forecast not found. Skipping.",
-                                     .immediate = TRUE)
+        message("..... Forecast not found. Skipping.", immediate = TRUE)
         next
       }
 
@@ -365,14 +360,15 @@ verify_hira <- function(dttm,
 
       }
 
-
-
-
-
       if (prm$accum > 0) {
         if (is.null(fc_accumulation) || fc_accumulation < 0) {
           if (ldt > prm$accum) { # if ldt==accum, you don't need to decumulate
-            fcfield <- fcfield - get_fc(fcdate, (ldt - prm$accum) / lt_scale)
+            zstep <- get_fc(fcdate, (ldt - prm$accum) / lt_scale)
+            if (inherits(zstep, "try-error")) {
+              message(".... Forecast sup-step not found. Skipping.", immediate = TRUE)
+              next
+            }
+            fcfield <- fcfield - zstep
           }
         } else {
           # In rare cases the forecast model needs "accumulating" rather than "decumulating"
@@ -385,8 +381,19 @@ verify_hira <- function(dttm,
             stop("The chosen accumulation time is smaller than what is available in the forecasts!")
           } else {
             nstep <- prm$accum / fstep
+            skip_fc <- FALSE
             for (i in 1:(nstep - 1)) {
-              fcfield <- fcfield + get_fc(fcdate, (ldt - i * fstep) / lt_scale)
+              zstep <- get_fc(fcdate, (ldt - i * fstep) / lt_scale)
+              if (inherits(zstep, "try-error")) {
+                message(".... Forecast sup-step not found.", immediate = TRUE)
+                skip_fc <- TRUE
+                next
+              }
+              fcfield <- fcfield + zstep
+            }
+            if (skip_fc) {
+              message("--> Skip forecast.", immediate = TRUE)
+              next
             }
           }
         }
