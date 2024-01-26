@@ -1,11 +1,13 @@
 Package: harpSpatial
 Type: Package
 Title: Utilities for HARP spatial verification
-Version: 0.0.1.9008
-Date: 2023-11-15
+Version: 0.0.1.9009
+Date: 2024-01-26
 Authors@R: as.person(c(
     "Alex Deckmyn <alex.deckmyn@meteo.be> [aut, cre]",
-    "Andrew Singleton <andrewts@met.no> [aut]" 
+    "Andrew Singleton <andrewts@met.no> [aut]",
+    "Daniel Yazgi <daniel.yazgi@smhi.sw> [aut]",
+    "Ahto Mets <ahto.mets@envir.ee> [aut]"
   ))
 Description: Spatial verification code for HARP
 Maintainer: Alex Deckmyn <alex.deckmyn@meteo.be>

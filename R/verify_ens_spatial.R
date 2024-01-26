@@ -240,7 +240,7 @@ verify_spatial <- function(start_date,
     message("=====\nobdate: ", format(obdate, "%Y%m%d-%H%M"))
     obfield <- get_ob(obdate)
     if (inherits(obfield, "try-error")) { # e.g. missing observation
-      if (harpenv$verbose) cat("Observation not found. Skipping.\n")
+      message("Observation not found. Skipping.\n")
       next
     }
     if (prm$accum > 0) { # an accumulated field like precipitation
@@ -292,8 +292,7 @@ verify_spatial <- function(start_date,
 
       fcfield <- get_fc(fcdate, ldt/lt_scale)
       if (inherits(fcfield, "try-error")) { # e.g. missing forecast run
-        if (harpenv$verbose) message("..... Forecast not found. Skipping.",
-                                     .immediate = TRUE)
+        message("..... Forecast not found. Skipping.", immediate = TRUE)
         next
       }
       if (prm$accum > 0) {
