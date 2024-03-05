@@ -101,7 +101,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // vector_to_bin
-LogicalVector vector_to_bin(NumericVector indat, float threshold);
+Rcpp::IntegerVector vector_to_bin(NumericVector indat, float threshold);
 RcppExport SEXP _harpSpatial_vector_to_bin(SEXP indatSEXP, SEXP thresholdSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;

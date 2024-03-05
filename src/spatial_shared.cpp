@@ -80,20 +80,20 @@ NumericMatrix window_mean_from_cumsum(NumericMatrix indat, int rad) {
 
 
 // [[Rcpp::export]]
-LogicalVector vector_to_bin(NumericVector indat, float threshold) {
-  
+Rcpp::IntegerVector vector_to_bin(NumericVector indat, float threshold) {
+
   int ni = indat.length();
-  LogicalVector result(ni);
-  
+  IntegerVector  result(ni);
+
   for (int i = 0; i < ni; i++) {
-    result(i) = (indat(i) >= threshold);
+    result(i) = indat(i) >= threshold?1:0;
   }
   return result;
 }
 
 // [[Rcpp::export]]
 NumericVector window_sum_from_cumsum_for_ij(NumericMatrix indat, int rad, NumericMatrix indices) {
-	
+
   //Rcout << "dims2: " << indat.nrow() << " " << indat.ncol() << "\n";
   // windowed average
   // input matrix is output from cumsum2d[_bin]
@@ -102,16 +102,16 @@ NumericVector window_sum_from_cumsum_for_ij(NumericMatrix indat, int rad, Numeri
   // TODO : other boundary options:
   //    - periodic or mirror
   //    - reduce rad close to border
- 
+
   int i, j, ni = indat.nrow(), nj = indat.ncol();
   int no = indices.ncol();
-  
+
   int imax, jmax;
   NumericVector result(no);
   for (int k = 0; k < no; k++) {
     i = (int) indices(0, k);
     j = (int) indices(1, k);
-    
+
     imax = std::min(i + rad, ni - 1);
     jmax = std::min(j + rad, nj - 1);
     result(k) = indat(imax, jmax);
@@ -122,6 +122,6 @@ NumericVector window_sum_from_cumsum_for_ij(NumericMatrix indat, int rad, Numeri
     } else if (j > rad)
       result(k) -= indat(imax, j - rad - 1);
   }
-  
+
   return result;
 }

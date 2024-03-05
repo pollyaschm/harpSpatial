@@ -113,26 +113,37 @@ verify_hira <- function(dttm,
   #     the accumulation time. Otherwise zero.
 
   # some date handling first : create vectors of date_time class
+  if (is.null(window_sizes)) {
+    stop("`window_sizes` is null")
+  }
+
+    thresholds <- thresholds[order(thresholds)]  # make sure that thresolds are ordered ASC
+
+
+
+
   if (missing(dttm)) {
       stop("`dttm` is not passed.")
   }
-  # check scores 
+  # check scores
   all_scores <- names(hira_scores())
-  
+
   if (is.null(scores)) {
     scores <- all_scores
-  } else 
+  } else
   {
     all_scores <- sub("^hira_", "", all_scores)
 	if  (!all(scores %in% all_scores)) {
 	   not_supported <- scores[!(scores %in% all_scores)]
-	   stop(paste("The following scores are not supprted: ", 
+	   stop(paste("The following scores are not supprted: ",
              paste(not_supported, collapse = ", ")))
 	}
-	
+
     scores <- sapply(scores, function (x)  paste0("hira_",x))
   }
-  
+
+
+
   # convert lead_time to seconds and remove lead_times smaller than accum
   # we don't have 3h precip at 0h forecast.
   # also, we probably want lead_time in steps of the accumulation
@@ -189,10 +200,11 @@ verify_hira <- function(dttm,
 
         if ( is.null(.selected_stations) || nrow(.selected_stations) == 0 ) {
 		    stop("No stations found inside the domain.")
-		} 
+		}
         # Go away from the boundaries
         .selected_stations <- .selected_stations %>%
-            filter(i + padding_i <= domain$nx, j + padding_j <= domain$ny) %>% arrange(SID)
+            filter(i + padding_i <= domain$nx, j + padding_j <= domain$ny,
+			   0 < i - padding_i, 0 < j - padding_j) %>% arrange(SID)
 
         # TODO: check if the selected stations is empty
 
@@ -221,7 +233,7 @@ verify_hira <- function(dttm,
     }
 
 
- 
+
 
 
 
@@ -282,7 +294,7 @@ verify_hira <- function(dttm,
   ncases <- length(dttm) * length(lead_time)
   message("expected ncases= ", ncases)
 
- 
+
   score_list <- hira_scores()[scores]
 
 #  score_templates <- lapply(names(score_list), function(sc) hira_scores(score = sc))
@@ -294,15 +306,17 @@ verify_hira <- function(dttm,
   names(score_tables) <-  names(score_list)
   # some score funtions calculate several scores together
   # we don't want to call them twice...
-  score_function_list <- unique(sapply(score_list, function(x) x$func))
-  # And conversely, for every such "multiscore", we need the list of scores that depend on it
-  score_function_subset <- as.list(sapply(score_function_list, function(msc)
-                                  names(which(sapply(score_list, function(x) x$func == msc )))))
+  score_function_list <- as.vector(unique(sapply(score_list, function(x) x$func)))
+
+  score_function_subset <- lapply(
+    score_function_list,
+    function(msc)
+    names(which(sapply(score_list, function(x) x$func == msc )))
+  )
+  names(score_function_subset) <- score_function_list
 
   hira_strategies <- unique(sapply(score_list, function(x) x$index))
   hira_strategies <- as.vector(hira_strategies[ hira_strategies >-1 ])
-
-
 
   #do_basic_scores <- "basic" %in% names(score_list)
 
@@ -401,11 +415,11 @@ verify_hira <- function(dttm,
 
 
       # find forecast vector for basic scores
- 
- 
+
+
 
       final_obs <- obsvect_full %>% select(obs,i,j) %>% drop_na()
-	  
+
       if (nrow(final_obs) == 0) {
          next
       }
@@ -434,7 +448,8 @@ verify_hira <- function(dttm,
         #print(is.vector(hira_strategies))
         myargs <- list(obsvect=final_obs$obs ,  indices = final_indices, fcfield=fcfield,
                          thresholds = thresholds,
-                         scales = window_sizes, strategies = hira_strategies, execute = TRUE ) # TODO: fill correct stratigies from scores
+                         scales = window_sizes, strategies = hira_strategies,
+                         execute = TRUE ) # TODO: fill correct stratigies from scores
         message("--> Calling ", sf)
         multiscore_list <- do.call(sf, myargs)
 
@@ -443,15 +458,14 @@ verify_hira <- function(dttm,
 
         if (!is.null(multiscore_list)) {
 
+          for (sn in score_function_subset[[sf]]) {
 
-            for (sn in score_function_subset[[sf]]) {
 
             multiscore <- as_tibble(multiscore_list[[sn]])
 
 
             # nrows per case for this score
             message("output dim : ", paste(dim(multiscore), collapse="x"))
-
 
 
             nrow <- dim(multiscore)[1]
@@ -492,18 +506,18 @@ verify_hira <- function(dttm,
 
   ## write to SQLite
   if (!is.null(sqlite_file)) {
-    save_spatial_verif(score_tables, sqlite_path, sqlite_file)
+    save_hira_verif(score_tables, sqlite_path, sqlite_file)
   }
 
   if (return_data) { invisible(score_tables) }
-  else { invisible(NULL) } 
+  else { invisible(NULL) }
 }
 
 #' Save spatial scores to SQLite
 #' @param scores A list of spatial score tables
 #' @param sqlite_path The path for the sqlite file
 #' @param sqlite_file The file to which the tables are written or added
-save_spatial_verif <- function(score_tables, sqlite_path, sqlite_file) {
+save_hira_verif <- function(score_tables, sqlite_path, sqlite_file) {
   if (is.null(sqlite_path)) db_file <- sqlite_file
   else db_file <- paste(sqlite_path, sqlite_file, sep = "/")
   message("Writing to SQLite file ", db_file)
@@ -515,8 +529,14 @@ save_spatial_verif <- function(score_tables, sqlite_path, sqlite_file) {
     harpIO:::create_table(db, sc, tab$fields, tab$primary)
     # TODO: should we drop all cases were any field is missing?
     ok <- !is.na(score_tables[[sc]][, "fcdate"])
-    message(sc, ":", dim(score_tables[[sc]])[1], " rows, ", sum(ok), " non-NA.")
-    harpIO:::dbwrite(db, sc, score_tables[[sc]][ok, ])
+    sum_ok = sum(ok)
+    message(sc, ":", dim(score_tables[[sc]])[1], " rows, ", sum_ok, " non-NA.")
+    if(sum_ok > 0) {
+      harpIO:::dbwrite(db, sc, score_tables[[sc]][ok, ])
+    } else {
+      message("No scores has been written")
+    }
+
   }
 
   harpIO:::dbclose(db)
