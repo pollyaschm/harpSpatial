@@ -20,6 +20,7 @@ DataFrame harpSpatial_basic_scores(NumericMatrix obfield, NumericMatrix fcfield)
   bias /= ni*nj ;
   mse  /= ni*nj ;
   mae  /= ni*nj ;
+  
 //  Rcout << "bias: " << bias << " mse: " << mse << " mae: " << mae << std::endl;
 
   return Rcpp::DataFrame::create(Named("mse")  = mse,

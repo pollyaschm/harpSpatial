@@ -2,10 +2,10 @@
 
 #' Run "HiRA" spatial verification for 1 case
 #'
-#' @param score One of HiRA Scores 
+#' @param score One of HiRA Scores
 #' @param execute If True then fire the score function
 #' @return A tibble with columns for obsvect, fcstvect fcfield, threshold, scales ...
-#' not exported 
+#' not exported
 hira_scores <- function(score = NULL, execute = NULL, ...) {
   # TODO: add score options, plot_func and plot_opt
   # FIXME: you MUST indicate the primary fields (e.g. threshold & scale) !
@@ -14,10 +14,12 @@ hira_scores <- function(score = NULL, execute = NULL, ...) {
                      "hira_bias"   = list(index = -1, fields = c("bias"), primary = c("scale", "count"), func = "scores_hira_basic"),
                      "hira_mse"    = list(index = -1, fields = c("mse"),  primary = c("scale", "count"), func = "scores_hira_basic"),
                      "hira_mae"    = list(index = -1, fields = c("mae"),  primary = c("scale", "count"), func = "scores_hira_basic"),
+
                      "hira_me"     = list(index =  0, fields = c("hit", "fa", "miss", "cr"), primary = c("threshold", "scale", "count"), func = "scores_hira"),
                      "hira_pragm"  = list(index =  1, fields = c("bss","bs"), primary = c("threshold", "scale", "count"), func = "scores_hira"),
-                     "hira_td"     = list(index =  2, fields = c("hit", "fa", "miss", "cr"), primary = c("threshold", "scale", "count"), func = "scores_hira"),
-					 "hira_csrr"   = list(index =  3, fields = c("prs","px"), primary = c("threshold", "scale", "count"), func = "scores_hira")
+                     "hira_csrr"   = list(index =  2, fields = c("rps","csrr"), primary = c("scale", "count"), func = "scores_hira")
+
+                     # "hira_td"     = list(index =  3, fields = c("hit", "fa", "miss", "cr"), primary = c("threshold", "scale", "count"), func = "scores_hira"),
                      )
 
 
@@ -38,31 +40,32 @@ hira_scores <- function(score = NULL, execute = NULL, ...) {
 #  message("argument list: ", paste(arglist, collapse=" "))
 
   do.call(score_list[[score]]$func, ... )
-  
+
 }
 
- 
+
 #' Run "HiRA" scores for 1 case
 #'
-#' @param obsvect One of HiRA Scores 
+#' @param obsvect One of HiRA Scores
 #' @param fcvect If True then fire the score function
 #' @return A list of bias, mse and mae.
-#' not exported 
-scores_hira  <- function(obsvect, indices, fcfield, thresholds, scales,strategies, ...) {
+#' not exported
+scores_hira  <- function(obsvect, indices, fcfield, thresholds, scales,strategies,...) {
     scores <- get_hira_scores(obsvect = obsvect,indices=indices,
-	  fcfield=fcfield,thresholds=thresholds,scales=scales, strategies=strategies) 
- 
- 	
+	  fcfield=fcfield,thresholds=thresholds,scales=scales, strategies=strategies)
+
 }
+
+
 
 #' Run "HiRA" basic scores for 1 case
 #'
-#' @param obsvect One of HiRA Scores 
+#' @param obsvect One of HiRA Scores
 #' @param fcvect If True then fire the score function
 #' @return A list of bias, mse and mae.
-#' not exported 
+#' not exported
 scores_hira_basic  <- function(obsvect, indices, fcfield, scales, ...) {
     scores <- get_hira_basic_scores(obsvect = obsvect,indices=indices,
-	  fcfield=fcfield,scales=scales) 
+	  fcfield=fcfield,scales=scales)
 
 }

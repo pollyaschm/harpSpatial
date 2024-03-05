@@ -28,4 +28,4 @@ Imports:
     lubridate,
     readr
 LinkingTo: Rcpp, harpCore
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
