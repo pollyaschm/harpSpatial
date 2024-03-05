@@ -193,8 +193,9 @@ NumericVector scales, NumericVector strategies) {
 
   bool is_multi_event = false; // 0
   bool is_pragmatic = false; // 1
-  bool is_td = false; // 2 Practically Perfect Hindcast
-  bool is_csrr = false; // 3 Conditional square root for RPS
+  bool is_csrr = false; // 2 Conditional square root for RPS
+  bool is_td = false; // 3 Practically Perfect Hindcast
+
   //bool is_basic = false; // 4 basic scores, bias, mse , mae
 
   for (int is = 0; is < nstrat; is++) {
@@ -209,10 +210,10 @@ NumericVector scales, NumericVector strategies) {
       is_pragmatic = true;
       break;
     case 2:
-      is_td = true;
+      is_csrr = true;
       break;
     case 3:
-      is_csrr = true;
+      is_td = true;
       break;
     //case 4:
     //  is_basic = true;

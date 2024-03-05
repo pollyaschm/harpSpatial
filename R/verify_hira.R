@@ -8,15 +8,14 @@
 #' @param lead_time The lead times to read as a numeric vector.
 #'   Should be in the units that are also used in fc_file_template.
 #' @param lt_unit The unit used for lead_time. Can be "h" (hours), "m" (minutes), "s" (seconds)
-#' @param stations The IDs of the stations to read from the files. By default
-#'   this is full list from harpCore::station_list, the stations outside the domain interior will be excluded.
+#' @param stations The list of the station  with the same format as harpCore::station_list.
+#' the stations outside the domain interior will be excluded.
 #' @param padding_i Number of grid points to define the domain interior in the x direction.
 #' @param padding_j Number of grid points to define the domain interior in the y direction.
 #' @param scores HiRA and basic scores
 #'   me:    Multi Event
 #'   pragm: Pragramtic
 #'   csrr:  Conditional Square Root RPS
-#'   td:    Theate Detection (not published yet)
 #'   bias:  Bias from area mean.
 #'   mse:   Mean Squared Error from area mean.
 #'   mae:   Mean Absolute Error from area mean.
