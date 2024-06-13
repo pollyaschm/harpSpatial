@@ -215,7 +215,7 @@ verify_spatial <- function(dttm,
       try(
         do.call(harpIO::read_grid,
             c(list(file_name = fcfile, file_format = fc_file_format,
-                       parameter = parameter, lead_time = lead_time,
+                       parameter = prm$basename, lead_time = lead_time,
                        file_format_opts = fc_file_opts,
 		       param_defs = fc_param_defs)))
       )
@@ -236,13 +236,13 @@ verify_spatial <- function(dttm,
         try(
           do.call(harpIO::read_grid,
                   c(list(file_name = fcfile, file_format = fc_file_format,
-                    parameter = parameter, lead_time = lead_time),
+                    parameter = prm$basename, lead_time = lead_time),
                     fc_file_opts))
           )
       } else {
         try(
           lapply(fcfile, harpIO::read_grid, file_format = fc_file_format,
-                  parameter = parameter, lead_time = lead_time, members=members,
+                  parameter = prm$basename, lead_time = lead_time, members=members,
                   unlist(fc_file_opts))
           )
       }
