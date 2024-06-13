@@ -41,6 +41,10 @@
 #'   accumulated parameters (e.g. precipitation). NULL signifies that the field is accumulated
 #'   from the start of the model run. Otherwise this should be a string containing a numerical value
 #'   and a time unit, e.g. "15m" or "1h".
+#' @param fc_param_defs A list of parameter definitions that includes the file
+#'          format to be read. By default the built in list ‘harp_params’
+#'          is used. Modifications and additions to this list can be made
+#'          using ‘modify_param_def’ and ‘add_param_def’ respectively.
 #' @param ob_file_path The top level path for the forecast files to read.
 #' @param ob_file_template The file type to generate the template for. Can be
 #'   "harmoneps_grib", "harmeoneps_grib_fp", "harmoneps_grib_sfx", "meps_met",
@@ -95,6 +99,7 @@ verify_spatial <- function(dttm,
                            fc_domain            = harpSpatial_conf$fc_domain, #NULL,
                            fc_interp_method     = harpSpatial_conf$fc_interp_method, #"closest",
                            fc_accumulation      = harpSpatial_conf$fc_accumulation, #NULL,
+			   fc_param_defs	= get("harp_params"),
                            ob_file_path         = harpSpatial_conf$ob_file_path, #"",
                            ob_file_template     = harpSpatial_conf$ob_file_template, #"",
                            ob_file_format       = harpSpatial_conf$ob_file_format, #"hdf5",
@@ -211,7 +216,8 @@ verify_spatial <- function(dttm,
         do.call(harpIO::read_grid,
             c(list(file_name = fcfile, file_format = fc_file_format,
                        parameter = parameter, lead_time = lead_time,
-                       file_format_opts = fc_file_opts)))
+                       file_format_opts = fc_file_opts,
+		       param_defs = fc_param_defs)))
       )
     }
   } else {
