@@ -113,7 +113,8 @@ verify_spatial <- function(dttm,
                            thresholds           = harpSpatial_conf$thresholds, #c(0.1, 1, 5, 10),
                            sqlite_path          = harpSpatial_conf$sqlite_path, #NULL,
                            sqlite_file          = harpSpatial_conf$sqlite_file, #"harp_spatial_scores.sqlite",
-                           return_data          = FALSE) {
+                           return_data          = FALSE,
+			   return_fields        = FALSE) {
 
   # TODO: we may need more options! masked interpolation, options by score,
   prm <- harpIO::parse_harp_parameter(parameter)
@@ -481,6 +482,11 @@ verify_spatial <- function(dttm,
   ## write to SQLite
   if (!is.null(sqlite_file)) {
     save_spatial_verif(score_tables, sqlite_path, sqlite_file)
+  }
+
+  if (return_fields & ncases == 1){
+	  score_tables <- append(score_tables, list("obfield"= obfield))
+	  score_tables <- append(score_tables, list("fcfield"= fcfield))
   }
 
   if (return_data) invisible(score_tables)
