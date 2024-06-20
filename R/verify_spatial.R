@@ -195,7 +195,7 @@ verify_spatial <- function(dttm,
     # FIXME: first check that the file exists! Avoid Errors. Use 
     try(do.call(harpIO::read_grid,
                   c(list(file_name=obfile, file_format=ob_file_format,
-                         parameter = ob_param, file_format_opts = ob_file_opts))),
+                         parameter = ob_param$basename, file_format_opts = ob_file_opts))),
         silent = TRUE) 
   }
 
