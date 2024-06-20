@@ -117,7 +117,13 @@ verify_spatial <- function(dttm,
 			   return_fields        = FALSE) {
 
   # TODO: we may need more options! masked interpolation, options by score,
+
   prm <- harpIO::parse_harp_parameter(parameter)
+
+  # quick FIX of wrong basename for IR and WV channels
+  if (prm$basename %in% c("IR_", "WV_")){
+	  prm$basename <- parameter
+  }
 
   # For efficiency, we use a slightly counter-intuitive loop order
   # we don't loop over forecast date and then lead time,
