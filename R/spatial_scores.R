@@ -14,6 +14,7 @@ spatial_scores <- function(score = NULL, obfield = NULL, fcfield = NULL, ...) {
                      "mse"    = list(fields = c("mse"),  "func" = "scores_sp_basic", "plot_func" = "plot_basic"),
                      "mae"    = list(fields = c("mae"),  "func" = "scores_sp_basic", "plot_func" = "plot_basic"),
                      "rmse"    = list(fields = c("rmse"),  "func" = "scores_sp_basic", "plot_func" = "plot_basic"),
+                     "Rpearson"    = list(fields = c("Rpearson"),  "func" = "scores_sp_basic", "plot_func" = "plot_basic"),
 #                     "gridded" = list(fields = c("bias", "mse"), "func" = "score_sp_gridded"),
                      "SAL"     = list(fields = c("S", "A", "L"), "func" = "SAL", "plot_func" = "plot_sal"),
                      "FSS"     = list(fields = c("fss"), primary = c("threshold", "scale"),
