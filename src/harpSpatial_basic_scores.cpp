@@ -6,7 +6,7 @@ using namespace Rcpp;
 DataFrame harpSpatial_basic_scores(NumericMatrix obfield, NumericMatrix fcfield) {
 // NOTE: "abs" would give integer abs, so make sure to write std::abs
   int i,j, ni=obfield.nrow(), nj=obfield.ncol() ;
-  double bias=0., mse=0., mae=0., tmp ;
+  double bias=0., mse=0., mae=0., rmse=0., tmp ;
   for (j=0 ; j < nj ; j++) {
     for (i=0 ; i < ni ; i++) {
       tmp = fcfield(i,j) - obfield(i,j);
@@ -20,11 +20,15 @@ DataFrame harpSpatial_basic_scores(NumericMatrix obfield, NumericMatrix fcfield)
   bias /= ni*nj ;
   mse  /= ni*nj ;
   mae  /= ni*nj ;
+
+  rmse  = sqrt(mse) ;
   
 //  Rcout << "bias: " << bias << " mse: " << mse << " mae: " << mae << std::endl;
+//  Rcout << "rmse: " << rmse << std::endl;
 
   return Rcpp::DataFrame::create(Named("mse")  = mse,
                                  Named("mae")  = mae,
-                                 Named("bias") = bias);
+                                 Named("bias") = bias,
+                                 Named("rmse") = rmse);
 
 }
