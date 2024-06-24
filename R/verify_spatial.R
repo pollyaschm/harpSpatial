@@ -67,6 +67,7 @@
 #' @param verif_domain A \code{geodomain} that defines the common verification grid.
 #' @param return_data          = TRUE,
 #' @param thresholds Thresholds used for FSS, ...
+#' @param percentiles percentiles used for FSS, ... Provide in percentages.
 #' @param window_sizes Scales used for fuzzy methods like FSS. A vector of box sizes.
 #'   All values must be odd integers (so the central point is really in the center of a box).
 #' @param sqlite_path If specified, SQLite files are generated and written to
@@ -106,6 +107,7 @@ verify_spatial <- function(dttm,
                            use_mask             = harpSpatial_conf$use_mask, #FALSE,
                            window_sizes         = harpSpatial_conf$window_sizes, #c(1, 3, 5, 11, 21),
                            thresholds           = harpSpatial_conf$thresholds, #c(0.1, 1, 5, 10),
+                           percentiles          = c(25, 50, 75, 90, 95),
                            sqlite_path          = harpSpatial_conf$sqlite_path, #NULL,
                            sqlite_file          = harpSpatial_conf$sqlite_file, #"harp_spatial_scores.sqlite",
                            return_data          = FALSE) {
@@ -428,7 +430,8 @@ verify_spatial <- function(dttm,
 #        arglist <- names(as.list(args(sf)))
         myargs <- list(obfield=obfield, fcfield=fcfield,
                          thresholds = thresholds,
-                         scales = window_sizes)
+                         scales = window_sizes,
+			 percentiles, percentiles)
         message("--> Calling ", sf)
         multiscore <- do.call(sf, myargs)
 
