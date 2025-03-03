@@ -7,7 +7,7 @@ DataFrame harpSpatial_basic_scores(NumericMatrix obfield, NumericMatrix fcfield)
 // NOTE: "abs" would give integer abs, so make sure to write std::abs
   int i,j, ni=obfield.nrow(), nj=obfield.ncol() ;
   double bias=0., mse=0., mae=0., rmse=0., tmp ;
-  double obmean, fcmean, corrnum, corrdenom1, corrdenom2, Rpearson ;
+  double obmean, fcmean, corrnum=0., corrdenom1=0., corrdenom2=0., Rpearson=0. ;
   obmean = mean(obfield) ;
   fcmean = mean(fcfield) ;
   for (j=0 ; j < nj ; j++) {
