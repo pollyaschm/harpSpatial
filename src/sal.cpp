@@ -4,17 +4,17 @@
 using namespace Rcpp;
 
 typedef std::vector<int> int_vector;
+
 //' @export
 // [[Rcpp::export]]
-List sal_identify_objects(NumericMatrix indat, double threshold,
-    NumericVector maxobj ) {
+List sal_identify_objects(NumericMatrix indat, double threshold, double maxobj) {
   // original fortran code by Daan Degrauwe
   // based on original idea of Wernli
   int i, j, ni=indat.nrow(), nj=indat.ncol() ;
   double pmax;
   int nobj = 0, kb;
   int_vector ib(ni*nj), jb(ni*nj),  ibn(ni*nj), jbn(ni*nj);
-  int nb, nbn, ii, jj;
+  int nb, nbn;
   IntegerMatrix objects(ni, nj);
 
 //  Rcout << "SAL" << std::endl ;
@@ -23,6 +23,7 @@ List sal_identify_objects(NumericMatrix indat, double threshold,
   while (1) {
     // find starting point as maximum value of points that do not belong to an object yet
     nobj++;
+//    if (nobj > maxobj) { ??? }
     pmax = 0.;
     // TODO: check data ordering. for R-objects, I guess matrix storage is R-style, not C
     // so we take columns (2nd index) as outer loop
@@ -113,7 +114,7 @@ List sal_identify_objects(NumericMatrix indat, double threshold,
   double s0=0., a0=0., lx=0., ly=0., lr=0., rtot;
   // S = 2*(smod-sobs)/(smod+sobs)
   // A <- 2*(dMod-dObs)/(dMod+dObs)
-  //    for S, A: treat remainder points as a final object
+  //    for S, A: treat remainder points as a final object (so e.g. all points added to total precip)
   //    BUT: for L: NOT, so only nobj-1 objects.
 //  v = 0;
 //  v1 = 0;
@@ -123,7 +124,8 @@ List sal_identify_objects(NumericMatrix indat, double threshold,
     lx += sal_stats(i, 2) ;
     ly += sal_stats(i, 3) ;
   }
-  rtot = a0;
+  rtot = a0;  // total precip within the "objects"
+
   // for S & A: also include "non-object points" as final object i = nobj-1
   s0 += sal_stats(i, 0) * sal_stats(i, 0) / sal_stats(i, 1);
   a0 += sal_stats(i, 0) ;

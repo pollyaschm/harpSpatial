@@ -6,3 +6,7 @@
 .Rproj.user
 .Rhistory
 .RData
+inst/doc
+*_fp
+*.nc
+

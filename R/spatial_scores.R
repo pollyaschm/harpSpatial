@@ -1,65 +1,62 @@
 # various spatial verification scores
-
-#' Run "fuzzy" spatial verification for 1 case
-#'
-#' @param obfield Observation grid.
-#' @param fcfield Forecast field
-#' @param thresholds A vector of thresholds
-#' @param window_sizes A vector of (odd!) window sizes
-#' @return A tibble with columns for threshold, window_size and various scores.
+#' Calculate spatial scores
+#' @param score The score to calculate. If NULL, the function will return a list of available scores.
+#' @param obfield A matrix containing the observation field. If NULL, the function will return
+#'   the table structure for the specified score.
+#' @param fcfield A matrix containing the forecast field. Must have the same dimension as obfield.
+#' @param ... Other options that may depend on the score (like scale, threshold, ...)
 #' @export
-verify_fuzzy <- function(obfield, fcfield, thresholds, window_sizes, scores=list("fss")) {
-  # you  might as well calculate a fixed set: they're 'cheap'
-  if (is.character(scores)) scores <- list(scores)
-  if (any(window_sizes %% 2 != 1)) stop("Window sizes must be odd.")
+spatial_scores <- function(score = NULL, obfield = NULL, fcfield = NULL, ...) {
+  # TODO: add score options, plot_func and plot_opt
+  # FIXME: you MUST indicate the primary fields (e.g. threshold & scale) !
+  score_list <- list(
+                     "bias"   = list(fields = c("bias"), "func" = "scores_sp_basic", "plot_func" = "plot_basic"),
+                     "mse"    = list(fields = c("mse"),  "func" = "scores_sp_basic", "plot_func" = "plot_basic"),
+                     "mae"    = list(fields = c("mae"),  "func" = "scores_sp_basic", "plot_func" = "plot_basic"),
+#                     "gridded" = list(fields = c("bias", "mse"), "func" = "score_sp_gridded"),
+                     "SAL"     = list(fields = c("S", "A", "L"), "func" = "SAL", "plot_func" = "plot_sal"),
+                     "FSS"     = list(fields = c("fss"), primary = c("threshold", "scale"),
+                                      "func" = "scores_sp_neighborhood", "plot_func" = "plot_fss"),
+                     "NACT"    = list(fields = c("hit", "fa", "miss", "cr"), primary = c("threshold", "scale"),
+                                      "func" = "scores_sp_neighborhood", "plot_func" = "plot_nact")
+#                     , "FSS_p"     = list(fields = c("percentile", "scale", "fss"), "func" = "score_fss", "plot_func" = "plot_fss")
+                     )
 
-  # basic preparation
-  # TODO: field.type="Preciptation" ???
-  # we use our optimised Rcpp fastSmooth code
+  # if called without "score", return a list of all scores
+  if (is.null(score)) return(score_list)
+  else if (!is.element(score, names(score_list))) stop("Unknown score ", score, ".\n")
 
-  nthresh <- length(thresholds)
-  nwin <- length(window_sizes)
+  # Derive table structure
+  # table_structure <- spatial_score_table(score_list[[score]]$fields)
+  # if called without "obfield" and "fcfield", just return the table structure for the given score
+  if (is.null(obfield) && is.null(fcfield)) {
+    return(score_list[[score]])
+  }
 
-#  result <- tibble::tibble(
-#    threshold = rep(thresholds, each=nwin),
-#    scale     = rep(window_sizes, nthresh),
-#    ets       = as.vector(vv$fuzzy$ets),
-#    fss       = as.vector(vv$fss$values),
-#    hk        = as.vector(vv$multi.event$hk)
-#  )
-  # other scores are probably best added in the same call, so we only calculate fractions once
-  # but it may not matter, fact
-  score_fss(obfield, fcfield, thresholds, window_sizes)
+  # FIXME: we may be calling with options that are not recognised/used by the score
+#  arglist <- names(as.list(args(score_list[[score]]$func)))
+#  message("score function: ", score_list[[score]]$func)
+#  message("argument list: ", paste(arglist, collapse=" "))
+
+  myargs <- c(list(obfield = obfield, fcfield = fcfield), list(...))
+  do.call(score_list[[score]]$func, myargs)
 }
 
-#' Run spatial verification for 1 case
-#'
-#' @param obfield Observation grid.
-#' @param fcfield Forecast field
-#' return A 1-row tibble of scores
-#' @export
-verify_basic <- function(obfield, fcfield) {
-  ## all spatial scores that do not require a threshold, scale etc.
-  ## so for a given case (date, time, leadtime), every score is a single number.
-  ## we store MSE, not RMSE, because eventually we may want to sum over a period, too.
-#  VXstats = c("ets", "hk", "f", "bias", "mse")
-#  s1 <- SpatialVx::vxstats(obfield, fcfield, which.stats = VXstats)
-  dimxy <- prod(dim(obfield))
-  mse <- sum((fcfield - obfield)^2)/dimxy
-  bias <- sum(fcfield - obfield)/dimxy
-# TODO ets, hk, f not yet written out
-# TODO: baserate, anomaly correlation (needs climatology...)
-  try(sal <- SAL(fcfield, obfield, min.rain = 0.1))
+# simple wrappers to deal with unwanted arguments
+# Yes, there are probably nicer ways...
 
-  # put all together in a tibble
-  result <- tibble::tibble(
-    bias  = bias,
-    mse   = mse,
-    S     = sal$S,
-    A     = sal$A,
-    L     = sal$L
+##' @export
+scores_sp_basic <- function(obfield, fcfield, ...) {
+  harpSpatial_basic_scores(obfield=obfield, fcfield=fcfield)
+}
+
+##' @export
+scores_sp_neighborhood <- function(obfield, fcfield, thresholds, scales, ...) {
+  message("obfield dimensions: ", paste(dim(obfield), collapse="x"))
+  message("fcfield dimensions: ", paste(dim(fcfield), collapse="x"))
+  message("thresholds", paste(thresholds, collapse=","))
+  message("scales", paste(scales, scales=","))
+  harpSpatial_neighborhood_scores(obfield=obfield, fcfield=fcfield,
+                                  thresholds=thresholds, scales=scales
   )
-
-  result
 }
-

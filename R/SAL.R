@@ -10,53 +10,56 @@
 #' SAL score
 #' @param fcfield The forecast field
 #' @param obfield The observation field
-#' @param threshscale Used for threshold
+#' @param thresh_scale Used for threshold of object boundaries: Rmax/threshscale
 #' @param threshold A 2-vector containing (precipitation) thresholds for fc and obs.
-#' @param sameThreshold If TRUE, threshold is a single number for both fields
+#' @param same_threshold If TRUE, threshold is a single number for both fields
 #' @param maxobj Maximum number of objects to identify
-#' @param min.rain The minimum value to be considered
-#' @param add.objs If TRUE, the object matrices are returned as attributes of the result.
-#' @return a vector with S, A, L values.
+#' @param min_rain The minimum value to be considered. If no grid point is above, SAL is not computed.
+#' @param add_objs If TRUE, the object matrices are returned as attributes of the result.
+#' @return a data.frame with S, A, L values.
+#' @param ... Ignored options.
 #' @export
 "SAL" <- function(fcfield, obfield,
-                  threshScale = 15.,
-                  threshold = pmax(.1, c(max(fcfield, na.rm=TRUE), 
-                                         max(obfield, na.rm=TRUE)))/threshScale,
-                  sameThreshold = FALSE,
+                  thresh_scale = 15.,
+                  min_rain = 0.1,
+#                  threshold = c(max(fcfield, na.rm=TRUE), max(obfield, na.rm=TRUE))/threshScale,
+                  same_threshold = FALSE,
                   maxobj = 1000,
-                  min.rain = 1.0,
-                  add.objs = FALSE) {
-    # set common threshold, if required
-    if (sameThreshold) {
-      threshold <- rep(max(threshold), 2)
-    }
-#    message('threshold (max/threshScale): ',threshold)
-
+                  add_objs = FALSE,
+                  ...) {
     # check if sizes are equal
     if ( ! all(dim(fcfield) == dim(obfield)) ) {
       stop('Model and Observation precipitation field should have the same dimensions')
     }
-	
+
+    if (missing(min_rain)) min_rain <- harpSpatial_conf$sal_options$min_rain
+    if (missing(thresh_scale)) thresh_scale <- harpSpatial_conf$sal_options$thresh_scale
+    if (missing(same_threshold)) same_threshold <- harpSpatial_conf$sal_options$same_threshold
+
+    # get max values for object thresholds
+    rmax <- c(max(fcfield, na.rm=TRUE), max(obfield, na.rm=TRUE))
+    if (any(rmax < min_rain)) {
+       message('No precipitation in model and/or observation above given threshold ', min_rain)
+       return(data.frame(S = NA_real_, A = NA_real_, L = NA_real_))
+    }
+    threshold <- rmax/thresh_scale
+
+    # set common threshold, if required
+    if (same_threshold) threshold <- rep(max(threshold), 2)
+ 
     # set NA's in both fields the same
+    # FIXME: can SAL calculations really handle missing values?
     fcfield[is.na(obfield)] <- NA
     obfield[is.na(fcfield)] <- NA
 
-    if ( max(fcfield, na.rm=TRUE) <= min.rain && max(obfield, na.rm=TRUE) <= min.rain ) {
-       ##stop('Stop. No precipitation in model and observation above given threshold')
-       message('No precipitation in model and observation above given threshold')
-       return(data.frame(S = 0, A = 0, L = 0))
-    }
-	
     # identify objects
-    fc_objects <- sal_identify_objects(fcfield, threshold = threshold[1], maxobj = maxobj)
-    ob_objects <- sal_identify_objects(obfield, threshold = threshold[2], maxobj = maxobj)
+    fc_objects <- sal_identify_objects(fcfield, threshold = threshold[1], maxobj)
+    ob_objects <- sal_identify_objects(obfield, threshold = threshold[2], maxobj)
 
     # combine ob and fc to get S,A,L :
     S <- 2*(fc_objects$stats$s - ob_objects$stats$s) / (fc_objects$stats$s + ob_objects$stats$s)
-    if (is.na(S)) S <- 0
 
     A <- 2*(fc_objects$stats$a - ob_objects$stats$a) / (fc_objects$stats$a + ob_objects$stats$a)
-    if (is.na(A)) A <- 0
 
     nx <- dim(fcfield)[1]
     ny <- dim(fcfield)[2]
@@ -67,7 +70,7 @@
     L <- (L1 + L2) / d
 
     scores <- data.frame("S" = S, "A" = A, "L" = L)
-    if (add.objs) {
+    if (add_objs) {
       attr(scores, "fc_objects") <- fc_objects
       attr(scores, "ob_objects") <- ob_objects
     }

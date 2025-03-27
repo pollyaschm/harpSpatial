@@ -4,30 +4,38 @@
 \alias{SAL}
 \title{SAL score}
 \usage{
-SAL(fcfield, obfield, threshScale = 15, threshold = pmax(0.1,
-  c(max(fcfield, na.rm = TRUE), max(obfield, na.rm = TRUE)))/threshScale,
-  sameThreshold = FALSE, maxobj = 1000, min.rain = 1,
-  add.objs = FALSE)
+SAL(
+  fcfield,
+  obfield,
+  thresh_scale = 15,
+  min_rain = 0.1,
+  same_threshold = FALSE,
+  maxobj = 1000,
+  add_objs = FALSE,
+  ...
+)
 }
 \arguments{
 \item{fcfield}{The forecast field}
 
 \item{obfield}{The observation field}
 
-\item{threshold}{A 2-vector containing (precipitation) thresholds for fc and obs.}
+\item{thresh_scale}{Used for threshold of object boundaries: Rmax/threshscale}
 
-\item{sameThreshold}{If TRUE, threshold is a single number for both fields}
+\item{min_rain}{The minimum value to be considered. If no grid point is above, SAL is not computed.}
+
+\item{same_threshold}{If TRUE, threshold is a single number for both fields}
 
 \item{maxobj}{Maximum number of objects to identify}
 
-\item{min.rain}{The minimum value to be considered}
+\item{add_objs}{If TRUE, the object matrices are returned as attributes of the result.}
 
-\item{add.objs}{If TRUE, the object matrices are returned as attributes of the result.}
+\item{...}{Ignored options.}
 
-\item{threshscale}{Used for threshold}
+\item{threshold}{A 2-vector containing (precipitation) thresholds for fc and obs.}
 }
 \value{
-a vector with S, A, L values.
+a data.frame with S, A, L values.
 }
 \description{
 SAL score
