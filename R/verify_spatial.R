@@ -64,6 +64,10 @@
 #'   from the start of the model run. That is probably rare for observations.
 #'   Otherwise this should be a string containing a numerical value
 #'   and a time unit, e.g. "15m" or "1h". "0" means an instantaneous value.
+#' @param ob_param_defs A list of parameter definitions that includes the file
+#'          format to be read. By default the built in list ‘harp_params’
+#'          is used. Modifications and additions to this list can be made
+#'          using ‘modify_param_def’ and ‘add_param_def’ respectively.
 #' @param verif_domain A \code{geodomain} that defines the common verification grid.
 #' @param return_data          = TRUE,
 #' @param thresholds Thresholds used for FSS, ...
@@ -101,6 +105,7 @@ verify_spatial <- function(dttm,
                            ob_file_opts         = harpSpatial_conf$ob_file_opts, #list(),
                            ob_domain            = harpSpatial_conf$ob_domain, #NULL,
                            ob_interp_method     = harpSpatial_conf$ob_interp_method, #"closest",
+			   ob_param_defs        = getExportedValue("harpIO", "harp_params"),
                            ob_accumulation      = harpSpatial_conf$ob_accumulation, #"15m",
                            verif_domain         = harpSpatial_conf$verif_domain, #NULL,
                            use_mask             = harpSpatial_conf$use_mask, #FALSE,
@@ -188,8 +193,11 @@ verify_spatial <- function(dttm,
     )
     # FIXME: first check that the file exists! Avoid Errors. Use 
     try(do.call(harpIO::read_grid,
-                  c(list(file_name=obfile, file_format=ob_file_format,
-                         parameter = ob_param, file_format_opts = ob_file_opts))),
+                  c(list(file_name        = obfile,
+			 file_format      = ob_file_format,
+			 parameter        = ob_param,
+			 file_format_opts = ob_file_opts,
+			 param_defs       = ob_param_defs))),
         silent = TRUE) 
   }
 
