@@ -7,7 +7,7 @@ DataFrame harpSpatial_basic_scores(NumericMatrix obfield, NumericMatrix fcfield)
 // NOTE: "abs" would give integer abs, so make sure to write std::abs
   int i,j, ni=obfield.nrow(), nj=obfield.ncol() ;
   double bias=0., mse=0., mae=0., rmse=0., tmp ;
-  double obmean, fcmean, corrnum, corrdenom1, corrdenom2, Rpearson ;
+  double obmean, fcmean, corrnum=0., corrdenom1=0., corrdenom2=0., Rpearson=NA_REAL ;
   obmean = mean(obfield) ;
   fcmean = mean(fcfield) ;
   for (j=0 ; j < nj ; j++) {
@@ -32,7 +32,9 @@ DataFrame harpSpatial_basic_scores(NumericMatrix obfield, NumericMatrix fcfield)
   corrnum /= ni*nj ;
   corrdenom1 /= ni*nj ;
   corrdenom2 /= ni*nj ;
-  Rpearson = corrnum / (sqrt(corrdenom1) * sqrt(corrdenom2)) ;
+  if (corrdenom1 > 0 && corrdenom2 > 0) {
+    Rpearson = corrnum / (sqrt(corrdenom1) * sqrt(corrdenom2)) ;
+  }
   
 //  Rcout << "bias: " << bias << " mse: " << mse << " mae: " << mae << std::endl;
 //  Rcout << "rmse: " << rmse << std::endl;
