@@ -143,11 +143,10 @@ verify_spatial <- function(dttm,
 
   # convert lead_time to seconds and remove lead_times smaller than accum
   # we don't have 3h precip at 0h forecast.
-  # also, we probably want lead_time in steps of the accumulation
   lt_scale <- harpIO:::units_multiplier(lt_unit)
   lead_time <- lead_time * lt_scale
   if (prm$accum > 0) {
-    lead_time <- lead_time[which(lead_time >= prm$accum & lead_time %% prm$accum == 0)]
+    lead_time <- lead_time[which(lead_time >= prm$accum)]
   }
   # dttm is a vector of STRINGS
   # we want datetime objects to which we can add the lead_time
