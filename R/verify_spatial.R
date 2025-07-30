@@ -444,7 +444,7 @@ verify_spatial <- function(dttm,
         myargs <- list(obfield=obfield, fcfield=fcfield,
                          thresholds = thresholds,
                          scales = window_sizes,
-			 percentiles, percentiles)
+			 percentiles = percentiles)
         message("--> Calling ", sf)
         multiscore <- do.call(sf, myargs)
 
