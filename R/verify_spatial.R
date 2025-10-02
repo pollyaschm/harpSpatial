@@ -158,7 +158,9 @@ verify_spatial <- function(dttm,
   lt_scale <- harpIO:::units_multiplier(lt_unit)
   lead_time <- lead_time * lt_scale
   if (prm$accum > 0) {
-    lead_time <- lead_time[which(lead_time >= prm$accum & lead_time %% prm$accum == 0)]
+    lead_time <- lead_time[which(lead_time >= prm$accum)]
+  } else {
+	  message("ERROR: lead_time is smaller than prm$accum!")
   }
   # dttm is a vector of STRINGS
   # we want datetime objects to which we can add the lead_time
