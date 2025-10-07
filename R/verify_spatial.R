@@ -365,7 +365,8 @@ verify_spatial <- function(dttm,
       ldt <- (as.numeric(obdate) - as.numeric(fcdate)) # in seconds !
       message(
         "   +++ fcdate = ", format(fcdate,"%Y%m%d-%H%M"),
-        " +++ ldt = ", ldt / lt_scale, lt_unit
+        " +++ ldt = ", ldt / lt_scale, 
+	", ldt unit =  ", lt_unit
       )
 
       fcfield <- get_fc(fcdate, ldt/lt_scale)
