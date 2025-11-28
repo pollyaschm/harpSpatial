@@ -19,6 +19,8 @@ spatial_scores <- function(score = NULL, obfield = NULL, fcfield = NULL, ...) {
                      "SAL"     = list(fields = c("S", "A", "L"), "func" = "SAL", "plot_func" = "plot_sal"),
                      "FSS"     = list(fields = c("fss"), primary = c("threshold", "scale"),
                                       "func" = "scores_sp_neighborhood", "plot_func" = "plot_fss"),
+                     "FSSp"    = list(fields = c("fss"), primary = c("threshold", "scale"),
+                                      "func" = "scores_sp_additional", "plot_func" = "plot_fss"),
                      "NACT"    = list(fields = c("hit", "fa", "miss", "cr"), primary = c("threshold", "scale"),
                                       "func" = "scores_sp_neighborhood", "plot_func" = "plot_nact")
 #                     , "FSS_p"     = list(fields = c("percentile", "scale", "fss"), "func" = "score_fss", "plot_func" = "plot_fss")
@@ -61,4 +63,73 @@ scores_sp_neighborhood <- function(obfield, fcfield, thresholds, scales, ...) {
   harpSpatial_neighborhood_scores(obfield=obfield, fcfield=fcfield,
                                   thresholds=thresholds, scales=scales
   )
+}
+
+
+remove_duplicate_perc <- function(percval, perc) {
+	tmp_val  <- NULL
+	tmp_perc <- NULL
+	# append value if it is not the same as the previous
+	for (i in 1:(length(perc)-1)){
+		if (percval[paste0(perc[i], "%")] != percval[paste0(perc[i+1], "%")]){
+			tmp_val  <- c(tmp_val, percval[paste0(perc[i], "%")])
+			tmp_perc <- c(tmp_perc, perc[i])
+		}
+	}
+	percval <- c(tmp_val, percval[paste0(perc[length(perc)], "%")])
+	perc    <- c(tmp_perc, perc[length(perc)])
+	return(list(percval=percval, perc=perc))
+}
+
+#' @export
+scores_sp_additional <- function(obfield, fcfield, percentiles, scales, minval=0., ...) {
+  message("scores_sp_additional: ")
+  message("percentiles: ", paste(percentiles, collapse=","))
+  dims <- dim(obfield)
+  perc <- append(0, percentiles) %>% append(., 100)
+  domain <- get_domain(obfield)
+
+  # get precipitation values of the percentiles for ob and fc respectively
+  ob_p_threshold <- quantile(obfield,  probs = perc/100, na.rm=TRUE)
+  message("obfield percentiles: ", paste(ob_p_threshold, collapse=","))
+  fc_p_threshold <- quantile(fcfield,  probs = perc/100, na.rm=TRUE)
+  message("fcfield percentiles: ", paste(fc_p_threshold, collapse=","))
+
+  # make sure there are no dublications - which would cause problems in the binning (next step)
+  if (length(unique(ob_p_threshold)) != length(ob_p_threshold)){
+	  warning("percentiles in obfield are not unique.")
+	  ob              <- remove_duplicate_perc(ob_p_threshold, perc)
+	  ob_p_threshold  <- ob$percval
+	  ob_percentile   <- ob$perc
+  } else {
+	  ob_percentile   <- perc
+  }
+  if (length(unique(fc_p_threshold)) != length(fc_p_threshold)){
+	  warning("percentiles in fcfield are not unique.")
+	  fc <- remove_duplicate_perc(fc_p_threshold, perc)
+	  fc_p_threshold  <- fc$percval
+	  fc_percentile   <- fc$perc
+  } else {
+	  fc_percentile   <- perc
+  }
+
+  # convert fields into percentiles fields via binning
+  # this is done since only one threshold is passed on to harpSpatial_neighborhood_scores()
+  obfield <- cut(obfield, ob_p_threshold, labels = perc[2:length(ob_percentile)])
+  fcfield <- cut(fcfield, fc_p_threshold, labels = perc[2:length(fc_percentile)])
+
+  # recreate matrix
+  obfield <- matrix(obfield, ncol=dims[1])
+  obfield <- matrix(as.numeric(obfield), dims)
+  fcfield <- matrix(fcfield, ncol=dims[1])
+  fcfield <- matrix(as.numeric(fcfield), dims)
+
+  obfield <- meteogrid::as.geofield(obfield,
+				    domain)
+  fcfield <- meteogrid::as.geofield(fcfield,
+				    domain)
+  harpSpatial_neighborhood_scores(obfield=obfield,
+				  fcfield=fcfield,
+				  thresholds=percentiles,
+				  scales=scales)
 }
