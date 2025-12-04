@@ -495,8 +495,8 @@ verify_spatial <- function(dttm,
   }
 
   if (return_fields && ncases == 1){
-	  score_tables <- append(score_tables, list("ob_field" = obfield))
-	  score_tables <- append(score_tables, list("fc_field" = fcfield))
+	  score_tables <- append(score_tables, list("obfield" = obfield))
+	  score_tables <- append(score_tables, list("fcfield" = fcfield))
   } else if (return_fields && ncases > 1){
 	  warning("NOTE: you are requesting return_fields for more than 1 case. This is currently NOT ENABLED to avoid data overload.")
   }
