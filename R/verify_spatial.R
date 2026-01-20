@@ -228,6 +228,7 @@ verify_spatial <- function(dttm,
             c(list(file_name        = fcfile,
 		   file_format      = fc_file_format,
 		   parameter        = parameter,
+		   dttm             = format(fcdate, "%Y%m%d%H%M")
 		   lead_time        = lead_time,
 		   file_format_opts = fc_file_opts,
 		   param_defs       = fc_param_defs)))
