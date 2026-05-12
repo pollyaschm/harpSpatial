@@ -58,7 +58,11 @@ double fss_from_fractions(NumericMatrix m1, NumericMatrix m2) {
       fss2 += m1(i,j)*m1(i,j) + m2(i,j)*m2(i,j) ;
     }
   }
-  if (fss2 < 1.0E-3) return 0. ;
+
+  // no-event case
+  if (fss2 < 1.0E-3)
+	  return NA_REAL ;
+
   return (1. - fss1/fss2) ;
 }
 
