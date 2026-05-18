@@ -265,7 +265,7 @@ DataFrame harpSpatial_neighborhood_scores(NumericMatrix obfield, NumericMatrix f
       } //j
       res_fbs[k]     = fss1;
       res_fbs_ref[k] = fss2;
-      res_fss[k]     = (fss2 < 1.0E-3) ? 0. : 1. - fss1/fss2 ;
+      res_fss[k]     = (fss2 < 1.0E-3) ? NA_REAL : 1. - fss1/fss2 ;
       res_a[k]       = a / (ni*nj) ;
       res_b[k]       = b / (ni*nj) ;
       res_c[k]       = c / (ni*nj) ;
